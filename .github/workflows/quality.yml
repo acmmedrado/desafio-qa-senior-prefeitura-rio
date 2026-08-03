@@ -1,0 +1,54 @@
+name: quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api-quality-gate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start API
+        working-directory: api
+        run: docker compose up -d --build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run functional API tests
+        run: |
+          mkdir -p reports
+          pytest \
+            --junitxml=reports/pytest-junit.xml \
+            --html=reports/pytest-report.html \
+            --self-contained-html
+
+      - name: Upload functional test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-test-reports
+          path: reports/
+
+      - name: Run k6 performance smoke
+        if: always()
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: performance/catalog-api.k6.js
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Stop API
+        if: always()
+        working-directory: api
+        run: docker compose down -v

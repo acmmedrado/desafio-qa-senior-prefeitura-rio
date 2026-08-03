@@ -1,55 +1,106 @@
-# Desafio Técnico — Engenheiro(a) de Qualidade (QA) Sênior — Automação
+# Desafio QA Senior - Automacao
 
-## Contexto
+Esta entrega monta uma camada de qualidade para o Catalogo de Servicos Publicos. O foco foi validar comportamento de API, seguranca basica, erros, bordas, performance e capacidade de execucao automatica em CI.
 
-Nossa equipe de back-end entregou o Catálogo de Serviços Públicos: uma API que lista e serve serviços municipais para os cariocas, como informações de vacinação, matrícula escolar, regularização de imóvel, benefícios sociais. A API está rodando. O que ainda não existe é uma entidade que verifique se a qualidade está a altura de um serviço desse porte.
+## Como executar
 
-Seu trabalho é sanar essa necessidade do zero. Partimos do princípio de que o código pode ter problemas, você vai testar para descobrir.
-
-## A API
+Suba a API:
 
 ```bash
-cd api/
-docker compose up -d
-# disponível em http://localhost:8080
+cd api
+docker compose up -d --build
 ```
 
-| Endpoint | Descrição |
-|----------|-----------|
-| `GET /health` | Status da API |
-| `GET /api/v1/services` | Lista serviços (suporta paginação com `page` e `per_page`) |
-| `GET /api/v1/services/:id` | Detalhe de um serviço |
-| `POST /api/v1/services/search` | Busca por texto — body: `{"query": "..."}` |
-| `GET /api/v1/services/:id/recommendations` | Serviços relacionados |
-| `POST /api/v1/webhooks/catalog` | Recebe atualizações de sistemas externos |
-| `POST /api/v1/services/:id/favorite` | Marca serviço como favorito |
+Instale as dependencias e rode os testes funcionais:
 
-Autenticação: `Authorization: Bearer qa-challenge-token`
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest
+```
 
-Webhook: o sistema externo assina com HMAC-SHA256. O header é `X-Signature-256: sha256=<hmac>`, o secret é `webhook-secret-2024`.
+Para gerar relatorios locais:
 
-Não há documentação formal além da informada acima, parte do trabalho é explorar e entender o comportamento da API.
+```bash
+mkdir -p reports
+pytest --junitxml=reports/pytest-junit.xml --html=reports/pytest-report.html --self-contained-html
+```
 
-## O que entregar
+Para rodar performance:
 
-Um repositório com um conjunto que dê confiança real para colocar essa API em produção. Ferramentas, estrutura e estratégia de cobertura são escolhas suas.
+```bash
+k6 run performance/catalog-api.k6.js
+```
 
-Esperamos encontrar testes que cubram mais do que os caminhos felizes, como: autenticação, erros, validações, comportamentos de borda. Esperamos testes de performance com thresholds que façam sentido para um serviço público de alta demanda. Esperamos um CI rodando os testes automaticamente. E esperamos um documento com os problemas que você encontrou: o que acontece, o que deveria acontecer, como reproduzir e qual o impacto.
+Variaveis suportadas:
 
-O README deve explicar o que você priorizou testar, por que, e o que faria com mais tempo.
+- `BASE_URL`: URL da API. Padrao: `http://localhost:8080`
+- `AUTH_TOKEN`: token usado pelo k6. Padrao: `qa-challenge-token`
+- `WEBHOOK_SECRET`: segredo HMAC usado pelo k6. Padrao: `webhook-secret-2024`
 
-## O que olhamos
+## O que foi priorizado
 
-A cobertura vai além dos happy paths? Os testes de performance são realistas, ou seja, os thresholds fazem sentido para a escala de um app municipal (milhares de pessoas acessando diariamente)? Os bugs estão documentados de forma que qualquer pessoa do time consiga reproduzir sem ajuda? O CI falha quando deveria e passa quando deveria? As escolhas de ferramentas têm justificativa?
+Priorizei riscos que impediriam colocar a API em producao com confianca:
 
-## Diferenciais
+- Integridade de contrato: formato de resposta, paginacao e consistencia de metadados.
+- Tratamento de erro: IDs inexistentes, JSON invalido, entradas vazias e parametros fora do intervalo.
+- Autenticacao e autorizacao: endpoint protegido, token invalido, ausencia de token e recomendacoes.
+- Seguranca de integracao: validacao HMAC do webhook.
+- Performance operacional: smoke/load test com thresholds para latencia e taxa de erro.
 
-- Contract testing
-- Testes de acessibilidade
-- Testes de resiliência (timeouts, falhas intermitentes)
-- Relatório de qualidade gerado automaticamente no CI
-- Test data management sem estado compartilhado entre testes
+O conjunto atual tem testes que passam para comportamentos corretos e testes que falham para defeitos encontrados. A falha da suite completa e intencional enquanto os bugs documentados em `docs/BUGS.md` nao forem corrigidos.
 
----
+## Estrutura
 
-Dúvidas: **selecao.pcrj@gmail.com**
+```text
+api/                         API fornecida no desafio
+tests/                       Testes funcionais e de contrato com pytest
+performance/catalog-api.k6.js Teste de carga/smoke com k6
+docs/BUGS.md                 Bugs encontrados, impacto e reproducao
+.github/workflows/quality.yml CI de qualidade
+```
+
+## Estrategia de cobertura
+
+Os testes foram separados por dominio para facilitar manutencao:
+
+- `test_health.py`: disponibilidade e metadados operacionais.
+- `test_services.py`: listagem, paginacao e detalhe de servico.
+- `test_search.py`: busca por texto e validacoes de entrada.
+- `test_auth_and_recommendations.py`: autorizacao, favoritos e recomendacoes.
+- `test_webhook.py`: contrato do webhook e assinatura HMAC.
+
+Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais.
+
+## Performance
+
+Os thresholds atuais foram definidos como uma primeira barra de producao para um catalogo municipal de alta consulta e baixa complexidade computacional:
+
+- `http_req_failed < 1%`
+- `p95 < 300ms`
+- `p99 < 750ms`
+- `checks > 99%`
+
+O cenario sobe ate 50 usuarios virtuais por ser um teste smoke de CI. Em uma etapa pre-producao, eu adicionaria cenarios mais longos, ramp-up com centenas de usuarios, teste de pico e teste de endurance.
+
+## CI
+
+O workflow `.github/workflows/quality.yml`:
+
+1. Sobe a API com Docker Compose.
+2. Instala dependencias Python.
+3. Executa os testes funcionais com JUnit e HTML report.
+4. Publica os relatorios como artefato.
+5. Executa o smoke de performance com k6.
+6. Derruba a API ao final.
+
+Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos.
+
+## O que faria com mais tempo
+
+- Criaria um OpenAPI inicial a partir do comportamento esperado e adicionaria contract testing formal.
+- Separaria testes bloqueantes de release e testes exploratorios/diagnosticos com marcadores de severidade.
+- Adicionaria testes de resiliencia para timeouts, reinicio da API e payloads grandes.
+- Integraria relatorio consolidado de qualidade no CI com sumario de bugs conhecidos.
+- Evoluiria test data management para uma API com estado persistente, evitando dependencia de dados globais fixos.
