@@ -18,7 +18,12 @@ Resultado atual: `500 Internal Server Error`.
 
 Resultado esperado: `404 Not Found` com corpo consistente, por exemplo `{"error":"service not found"}`.
 
-Teste automatizado: `tests/test_services.py::test_get_unknown_service_returns_404_instead_of_server_error`.
+Testes automatizados:
+
+- `tests/test_services.py::test_get_unknown_service_returns_404_instead_of_server_error`
+- `tests/test_services.py::test_get_unknown_service_handles_adversarial_ids_without_server_error`
+
+Observacao adicional: o mesmo comportamento foi observado com variacoes adversariais de ID inexistente, como entrada SQL-like, unicode parecido, string muito longa e whitespace. Isso indica que o problema nao esta restrito a um ID inexistente simples.
 
 ## BUG-002 - Busca com query vazia retorna todos os servicos
 

@@ -23,6 +23,13 @@ BUS_PASS_SERVICE_ID = "s006"
 HEALTH_SERVICE_IDS = {"s002", "s010"}
 BENEFITS_SERVICE_IDS = {"s001", "s011"}
 UNKNOWN_SERVICE_ID = "s999"
+ADVERSARIAL_UNKNOWN_SERVICE_IDS = [
+    UNKNOWN_SERVICE_ID,
+    "s999 OR 1=1",
+    "s" + "9" * 500,
+    "ѕ002",
+    "   ",
+]
 
 BUSINESS_NEED_QUERY = "abrir comercio"
 BUS_QUERY = "onibus"

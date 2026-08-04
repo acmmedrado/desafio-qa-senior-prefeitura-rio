@@ -10,6 +10,7 @@ Exemplos de cenarios fora do happy path:
 
 - token ausente, token invalido e esquema de autorizacao malformado;
 - servico inexistente;
+- variacoes adversariais de ID inexistente, incluindo entrada SQL-like, unicode parecido, string enorme e whitespace;
 - JSON malformado;
 - query vazia ou em branco;
 - paginacao com valores negativos, zero, nao numericos e pagina fora do intervalo;
@@ -80,6 +81,6 @@ Sim. As ferramentas foram escolhidas pela simplicidade, legibilidade e compatibi
 
 ## Conclusao
 
-A cobertura e suficiente para o contexto do desafio e esta acima de uma entrega minima. Ela demonstra maturidade por cobrir riscos alem do happy path, documentar bugs de forma executavel, separar gates por severidade, justificar performance com limites claros e manter o codigo de teste organizado.
+A cobertura e suficiente para o contexto do desafio e esta acima de uma entrega minima. Ela demonstra maturidade por cobrir riscos alem do happy path, documentar bugs de forma executavel, separar gates por severidade, justificar performance com limites claros, explorar entradas adversariais e manter o codigo de teste organizado.
 
 Ela ainda nao substitui uma estrategia completa de producao. Com mais tempo, eu adicionaria testes gerados por contrato com Schemathesis, property-based testing com Hypothesis, simulacao controlada de timeouts/falhas de rede e testes de endurance em ambiente mais parecido com producao.

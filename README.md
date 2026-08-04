@@ -87,6 +87,7 @@ performance/catalog-api.k6.js Teste de carga/smoke com k6
 performance/spike.k6.js       Teste manual de pico/stress
 docs/BUGS.md                 Bugs encontrados, impacto e reproducao
 docs/EXECUTION.md            Resultado de uma execucao local real
+docs/PERFORMANCE_EVIDENCE.md Evidencia resumida dos testes de performance
 docs/RISK_TRACEABILITY.md     Risco, requisito, teste e evidencia
 docs/RELEASE_WAIVERS.md       Politica de waiver para bugs bloqueantes
 docs/UX_QUALITY.md           Avaliacao da API pela lente de usabilidade
@@ -166,7 +167,7 @@ Com a API rodando localmente em `http://localhost:8080`:
 |---|---:|---|
 | `make lint` | passou | Codigo de testes e scripts formatado/validado com `ruff` |
 | `make test` | 38 passed | Quality gate funcional verde |
-| `make release-gate` | 5 failed | Bugs criticos/seguranca bloqueando release |
+| `make release-gate` | 6 failed | Bugs criticos/seguranca bloqueando release |
 | `make test-known-bugs-diagnostic` | 12 failed | Bugs medios/baixos e riscos de UX documentados |
 | `make perf` | passou | Smoke de performance com `0.00%` de falhas HTTP |
 
@@ -174,7 +175,7 @@ Resumo do relatorio consolidado:
 
 ```text
 Quality gate: 38 passed, 0 failed
-Release-blocking known bugs: 5 failed
+Release-blocking known bugs: 6 failed
 Non-blocking known bug diagnostics: 12 failed
 Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 ```
@@ -190,12 +191,12 @@ Quality Summary
 
 Execution Gates
 - Quality gate: 38 tests, 38 passed, 0 failures
-- Release-blocking known bugs: 5 tests, 5 failures
+- Release-blocking known bugs: 6 tests, 6 failures
 - Non-blocking known bug diagnostics: 12 tests, 12 failures
 
 Quality Lenses
 - API contract and schema: 34 tests mapped
-- Negative and edge cases: 20 tests mapped
+- Negative and edge cases: 21 tests mapped
 - Security and authorization: 4 tests mapped
 - Test data management: 4 tests mapped
 - UX and API usability: 6 tests mapped
@@ -206,7 +207,7 @@ Quality Lenses
 
 ```text
 Suite funcional sem bugs conhecidos
-Resultado: 38 passed, 17 deselected
+Resultado: 38 passed, 18 deselected
 Interpretacao: o quality gate principal esta verde para os comportamentos aceitos.
 ```
 
@@ -214,10 +215,11 @@ Interpretacao: o quality gate principal esta verde para os comportamentos aceito
 
 ```text
 Bugs bloqueantes de release
-Resultado: 5 failed, 50 deselected
+Resultado: 6 failed, 50 deselected
 Exemplos:
 - recommendations sem token retorna 200 em vez de 401
 - servico inexistente retorna 500 em vez de 404
+- variacoes adversariais de id inexistente tambem retornam 500
 - webhook aceita assinatura ausente ou invalida
 ```
 
@@ -225,7 +227,7 @@ Exemplos:
 
 ```text
 Bugs diagnosticos nao bloqueantes
-Resultado: 12 failed, 43 deselected
+Resultado: 12 failed, 44 deselected
 Exemplos:
 - busca sem resultado retorna results=null em vez de []
 - busca nao normaliza acentos, espacos e termos comuns
@@ -245,6 +247,8 @@ Os thresholds atuais foram definidos como uma primeira barra de producao para um
 O cenario de CI sobe ate 50 usuarios virtuais por ser um smoke test. Uma forma de justificar esse numero: se o catalogo tiver 20 mil acessos/dia e 20% deles ocorrerem em uma janela de pico de 2 horas, isso representa cerca de 33 requisicoes/minuto. Com usuarios navegando por alguns segundos entre busca, detalhe e recomendacao, 50 VUs e uma carga conservadora para detectar regressao sem deixar o CI lento.
 
 Os tempos observados localmente em microssegundos refletem uma API Go em memoria, sem banco, rede real, cache externo, observabilidade ou infraestrutura de producao. Por isso, os testes de performance aqui servem como smoke/regressao e nao como prova de capacidade final de producao.
+
+Uma evidencia resumida de execucao local esta em `docs/PERFORMANCE_EVIDENCE.md`.
 
 Tambem existe um cenario manual de spike/stress:
 

@@ -1,6 +1,6 @@
 import pytest
 
-from tests.data import VACCINATION_SERVICE_TITLE
+from tests.data import ADVERSARIAL_UNKNOWN_SERVICE_IDS, VACCINATION_SERVICE_TITLE
 
 
 @pytest.mark.contract
@@ -117,3 +117,15 @@ def test_get_unknown_service_returns_404_instead_of_server_error(api, catalog):
 
     assert response.status_code == 404
     assert response.json()["error"] == "service not found"
+
+
+@pytest.mark.negative
+@pytest.mark.known_bug
+@pytest.mark.known_bug_high
+def test_get_unknown_service_handles_adversarial_ids_without_server_error(api):
+    responses = [
+        (service_id, api.get_service(service_id).status_code)
+        for service_id in ADVERSARIAL_UNKNOWN_SERVICE_IDS
+    ]
+
+    assert responses == [(service_id, 404) for service_id in ADVERSARIAL_UNKNOWN_SERVICE_IDS]

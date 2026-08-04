@@ -4,7 +4,7 @@
 |---|---|---|---|
 | API deve estar operacional | Funcional | `test_health_returns_operational_metadata`, `test_health_matches_openapi_contract` | Quality gate |
 | Listagem deve ser paginada corretamente | Contrato | `test_list_services_default_pagination_contract`, `test_list_services_total_pages_uses_ceiling_for_smaller_page_size` | BUG-003 |
-| Detalhe inexistente deve permitir recuperacao | Funcional/erro | `test_get_unknown_service_returns_404_instead_of_server_error` | BUG-001 |
+| Detalhe inexistente deve permitir recuperacao | Funcional/erro | `test_get_unknown_service_returns_404_instead_of_server_error`, `test_get_unknown_service_handles_adversarial_ids_without_server_error` | BUG-001 |
 | Busca nao deve aceitar entrada vazia | Validacao | `test_search_rejects_empty_query`, `test_search_rejects_blank_query` | BUG-002 |
 | Busca deve retornar colecoes previsiveis | Contrato/UX | `test_empty_search_response_matches_openapi_contract`, `test_search_returns_empty_result_set_when_no_service_matches` | BUG-006 |
 | Busca deve apoiar encontrabilidade | UX | `test_search_is_accent_insensitive_for_user_typed_text`, `test_search_matches_tags_for_common_user_terms`, `test_search_supports_need_based_language_for_school_enrollment` | BUG-007, BUG-008 |
@@ -28,7 +28,7 @@ No CI, os bugs conhecidos sao coletados como evidencia e publicados no resumo co
 Estado atual validado localmente:
 
 - Quality gate: 38 testes passando.
-- Release gate: 5 falhas bloqueantes.
+- Release gate: 6 falhas bloqueantes.
 - Diagnostico nao bloqueante: 12 falhas conhecidas.
 
 ## Criterio de Waiver
