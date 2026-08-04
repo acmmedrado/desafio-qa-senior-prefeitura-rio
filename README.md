@@ -266,7 +266,7 @@ O workflow `.github/workflows/quality.yml`:
 6. Executa os testes de bugs conhecidos nao criticos como diagnostico.
 7. Gera um resumo consolidado no GitHub Step Summary, incluindo gates, lentes de qualidade, arquitetura de testes e bugs conhecidos em aberto.
 8. Publica os relatorios como artefato.
-9. Executa o smoke de performance com k6.
+9. Executa o smoke de performance com a imagem Docker oficial do k6.
 10. Derruba a API ao final.
 
 Como a API atual tem defeitos de severidade media a critica, `make release-gate` deve falhar localmente ate que eles sejam corrigidos ou formalmente aceitos. No GitHub Actions, esses bugs conhecidos sao coletados como evidencia e destacados no `quality-summary.md`, enquanto o workflow em si falha apenas se o quality gate funcional quebrar.

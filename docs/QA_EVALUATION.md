@@ -75,7 +75,7 @@ Sim. As ferramentas foram escolhidas pela simplicidade, legibilidade e compatibi
 | `pytest-html` | Relatorios HTML consumiveis por pessoas do time e avaliadores. |
 | JUnit XML | Formato padrao para CI, dashboards e sumarizacao automatica. |
 | `ruff` | Lint e formatacao rapidos para manter qualidade do codigo de teste. |
-| `k6` | Testes de performance com cenarios e thresholds declarativos. |
+| `k6` | Testes de performance com cenarios e thresholds declarativos; no CI roda via imagem Docker oficial para evitar dependencia de action arquivada. |
 | GitHub Actions | Execucao automatica, artefatos, agendamento e resumo visivel no pull request ou push. |
 
 ## Conclusao

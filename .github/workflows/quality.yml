@@ -82,19 +82,19 @@ jobs:
 
       - name: Run k6 performance smoke
         if: always()
-        uses: grafana/k6-action@v0.3.1
-        with:
-          filename: performance/catalog-api.k6.js
-        env:
-          BASE_URL: http://localhost:8080
+        run: |
+          docker run --rm --network host \
+            -e BASE_URL=http://localhost:8080 \
+            -v "$PWD:/workspace" \
+            grafana/k6:0.49.0 run /workspace/performance/catalog-api.k6.js
 
       - name: Run scheduled k6 spike
         if: always() && github.event_name == 'schedule'
-        uses: grafana/k6-action@v0.3.1
-        with:
-          filename: performance/spike.k6.js
-        env:
-          BASE_URL: http://localhost:8080
+        run: |
+          docker run --rm --network host \
+            -e BASE_URL=http://localhost:8080 \
+            -v "$PWD:/workspace" \
+            grafana/k6:0.49.0 run /workspace/performance/spike.k6.js
 
       - name: Stop API
         if: always()
