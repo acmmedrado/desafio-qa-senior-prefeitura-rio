@@ -53,7 +53,7 @@ jobs:
       - name: Collect release-blocking known bug evidence
         if: always()
         run: |
-          pytest -m "known_bug_high or security" \
+          pytest -m "known_bug and (known_bug_high or security)" \
             --junitxml=reports/release-gate-junit.xml \
             --html=reports/release-gate-report.html \
             --self-contained-html || true

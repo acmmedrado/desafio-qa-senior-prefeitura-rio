@@ -37,7 +37,7 @@ test:
 	BASE_URL=$(BASE_URL) $(PYTEST) -m "not known_bug"
 
 release-gate:
-	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug_high or security"
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug and (known_bug_high or security)"
 
 test-known-bugs:
 	BASE_URL=$(BASE_URL) $(PYTEST) -m known_bug
@@ -54,7 +54,7 @@ reports:
 		--junitxml=reports/pytest-junit.xml \
 		--html=reports/pytest-report.html \
 		--self-contained-html
-	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug_high or security" \
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug and (known_bug_high or security)" \
 		--junitxml=reports/release-gate-junit.xml \
 		--html=reports/release-gate-report.html \
 		--self-contained-html || true

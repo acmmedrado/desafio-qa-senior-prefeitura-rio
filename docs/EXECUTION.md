@@ -19,19 +19,19 @@ pytest -m "not known_bug"
 Resultado observado:
 
 ```text
-45 passed, 21 deselected
+49 passed, 23 deselected
 ```
 
 Release gate bloqueante:
 
 ```bash
-pytest -m "known_bug_high or security"
+pytest -m "known_bug and (known_bug_high or security)"
 ```
 
 Resultado observado:
 
 ```text
-8 failed, 58 deselected
+10 failed, 62 deselected
 ```
 
 Suite diagnostica de bugs conhecidos:
@@ -43,10 +43,10 @@ pytest -m "known_bug and not (known_bug_high or security)"
 Resultado observado:
 
 ```text
-13 failed, 53 deselected
+13 failed, 59 deselected
 ```
 
-As 8 falhas do release gate devem bloquear release enquanto nao forem corrigidas ou formalmente justificadas em `docs/RELEASE_WAIVERS.md`. As 13 falhas diagnosticas representam bugs medios/baixos e riscos de usabilidade documentados em `docs/BUGS.md`.
+As 10 falhas do release gate devem bloquear release enquanto nao forem corrigidas ou formalmente justificadas em `docs/RELEASE_WAIVERS.md`. As 13 falhas diagnosticas representam bugs medios/baixos e riscos de usabilidade documentados em `docs/BUGS.md`.
 
 ## Performance
 

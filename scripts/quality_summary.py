@@ -96,7 +96,10 @@ def passed_count(totals: dict[str, int]) -> int:
 def coverage_line(label: str, cases: list[TestCase], selector) -> str:
     selected = [case for case in cases if selector(case)]
     blocking = [
-        case for case in selected if "known_bug_high" in case.markers or "security" in case.markers
+        case
+        for case in selected
+        if "known_bug" in case.markers
+        and ("known_bug_high" in case.markers or "security" in case.markers)
     ]
     diagnostics = [
         case for case in selected if "known_bug" in case.markers and case not in blocking
@@ -119,7 +122,8 @@ def coverage_counts(cases: list[TestCase]) -> list[tuple[str, int, int, int]]:
         blocking = [
             case
             for case in selected
-            if "known_bug_high" in case.markers or "security" in case.markers
+            if "known_bug" in case.markers
+            and ("known_bug_high" in case.markers or "security" in case.markers)
         ]
         diagnostics = [
             case for case in selected if "known_bug" in case.markers and case not in blocking

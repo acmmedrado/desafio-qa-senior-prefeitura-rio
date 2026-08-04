@@ -2,7 +2,7 @@
 
 Ambiente validado: API local via `docker compose up -d`, porta `8080`.
 
-## BUG-001 - Servico inexistente retorna 500 em vez de 404
+## BUG-001 - Servico inexistente ou ID adversarial retorna 500 em vez de 404
 
 Severidade: Alta
 
@@ -22,8 +22,9 @@ Testes automatizados:
 
 - `tests/test_services.py::test_get_unknown_service_returns_404_instead_of_server_error`
 - `tests/test_services.py::test_get_unknown_service_handles_adversarial_ids_without_server_error`
+- `tests/test_security.py::test_service_detail_handles_encoded_injection_ids_without_server_error`
 
-Observacao adicional: o mesmo comportamento foi observado com variacoes adversariais de ID inexistente, como entrada SQL-like, unicode parecido, string muito longa e whitespace. Isso indica que o problema nao esta restrito a um ID inexistente simples.
+Observacao adicional: o mesmo comportamento foi observado com variacoes adversariais de ID inexistente, como entrada SQL-like, unicode parecido, string muito longa, whitespace e IDs encoded com payloads de injection. Isso indica que o problema nao esta restrito a um ID inexistente simples.
 
 ## BUG-002 - Busca com query vazia retorna todos os servicos
 
@@ -86,7 +87,7 @@ curl -i -X POST http://localhost:8080/api/v1/webhooks/catalog \
 
 Resultado atual: `200 OK`.
 
-Resultado esperado: `401 Unauthorized` para assinatura ausente ou invalida.
+Resultado esperado: `401 Unauthorized` para assinatura ausente, invalida, assinada com secret incorreto ou usando algoritmo/esquema nao permitido.
 
 Testes automatizados:
 
@@ -94,6 +95,7 @@ Testes automatizados:
 - `tests/test_webhook.py::test_webhook_rejects_invalid_signature`
 - `tests/test_webhook.py::test_webhook_rejects_signature_created_with_wrong_secret`
 - `tests/test_webhook.py::test_webhook_rejects_signature_from_different_payload`
+- `tests/test_security.py::test_webhook_rejects_malformed_signature_scheme`
 
 ## BUG-005 - Recomendacoes sao acessiveis sem autenticacao
 

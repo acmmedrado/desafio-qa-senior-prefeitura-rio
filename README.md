@@ -8,8 +8,8 @@ Camada de qualidade para o **Catalogo de Servicos Publicos** da Prefeitura do Ri
 
 | Area | Status | Evidencia |
 |---|---|---|
-| Quality gate funcional | OK | `45/45` testes passando |
-| Release gate | Bloqueado | `8` bugs criticos/seguranca documentados |
+| Quality gate funcional | OK | `49/49` testes passando |
+| Release gate | Bloqueado | `10` bugs criticos/seguranca documentados |
 | Diagnostico de bugs | Mapeado | `13` falhas conhecidas de media/baixa severidade e UX |
 | Performance smoke | OK | `0.00%` falhas HTTP, `p95=601us`, `p99=1.14ms` |
 | CI | OK | Lint, testes, relatorios e k6 no GitHub Actions |
@@ -93,16 +93,16 @@ Execucao local registrada em [docs/EXECUTION.md](docs/EXECUTION.md), com API em 
 | Gate | Comando | Resultado | Interpretacao |
 |---|---|---:|---|
 | Lint | `make lint` | passou | Codigo de testes e scripts consistente |
-| Quality gate | `make test` | `45 passed` | Comportamentos aceitos estao verdes |
-| Release gate | `make release-gate` | `8 failed` | Bugs criticos/seguranca bloqueiam release |
+| Quality gate | `make test` | `49 passed` | Comportamentos aceitos estao verdes |
+| Release gate | `make release-gate` | `10 failed` | Bugs criticos/seguranca bloqueiam release |
 | Diagnostico | `make test-known-bugs-diagnostic` | `13 failed` | Bugs conhecidos seguem reproduziveis |
 | Performance | `make perf` | passou | Sem falhas HTTP e sem saturacao no smoke |
 
 Resumo consolidado gerado por `make reports`:
 
 ```text
-Quality gate: 45 passed, 0 failed
-Release-blocking known bugs: 8 failed
+Quality gate: 49 passed, 0 failed
+Release-blocking known bugs: 10 failed
 Non-blocking known bug diagnostics: 13 failed
 Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 ```
@@ -127,7 +127,7 @@ Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 |---|---:|---|
 | API contract and schema | 40 | OpenAPI, JSON Schema, consistencia de payloads |
 | Negative and edge cases | 25 | Entradas invalidas, bordas, IDs adversariais |
-| Security and authorization | 6 | Token, esquemas invalidos e HMAC |
+| Security and authorization | 12 | Token, injection, vazamento de erro, esquemas invalidos e HMAC |
 | Test data management | 4 | Snapshot isolado e ausencia de estado mutavel compartilhado |
 | UX and API usability | 6 | Encontrabilidade, linguagem de usuario e relevancia |
 | Resilience | 5 | Burst curto, payload grande, conexao e metodos invalidos |
@@ -149,10 +149,10 @@ A lista completa esta em [docs/BUGS.md](docs/BUGS.md). Cada bug tem impacto, rep
 
 | ID | Severidade | Area | Resumo |
 |---|---|---|---|
-| BUG-001 | Alta | Erro/contrato | Servico inexistente retorna `500` em vez de `404`. |
+| BUG-001 | Alta | Erro/contrato | Servico inexistente ou ID adversarial retorna `500` em vez de `404`. |
 | BUG-002 | Media | Validacao | Busca vazia ou sem `query` retorna sucesso. |
 | BUG-003 | Media | Paginacao | `total_pages` usa arredondamento para baixo. |
-| BUG-004 | Critica | Seguranca | Webhook aceita assinatura ausente, invalida ou com secret errado. |
+| BUG-004 | Critica | Seguranca | Webhook aceita assinatura ausente, invalida, com secret errado ou algoritmo incorreto. |
 | BUG-005 | Alta | Autorizacao | Recomendacoes aceitam ausencia/token invalido. |
 | BUG-006 | Baixa | Contrato/UX | Busca sem resultado retorna `results: null` em vez de `[]`. |
 | BUG-007 | Media | UX | Busca nao normaliza acentos, espacos e tags comuns. |
@@ -164,6 +164,7 @@ A lista completa esta em [docs/BUGS.md](docs/BUGS.md). Cada bug tem impacto, rep
 |---|---|
 | Contract testing | `openapi.yaml`, `jsonschema` e validacoes em `tests/test_contract.py` |
 | Acessibilidade | Avaliacao pela lente de API usability em [docs/UX_QUALITY.md](docs/UX_QUALITY.md) |
+| Security testing | `tests/test_security.py` cobre injection, auth abusiva, HMAC malformado e information disclosure |
 | Resiliencia | `tests/test_resilience.py`, payload grande, burst concorrente e conexao fechada |
 | Relatorio no CI | `scripts/quality_summary.py` gera `quality-summary.md` e Step Summary |
 | Test data management | Fixtures isoladas, `tests/data.py`, snapshots frescos e client por teste |
@@ -194,6 +195,7 @@ docs/                         Bugs, execucao, risco, performance e avaliacao QA
 | `test_search.py` | Busca por texto e validacoes de entrada |
 | `test_auth_and_recommendations.py` | Favoritos, autorizacao e recomendacoes |
 | `test_webhook.py` | Contrato do webhook e assinatura HMAC |
+| `test_security.py` | Injection, auth abusiva, HMAC malformado e vazamento de erro |
 | `test_contract.py` | OpenAPI, JSON Schema e consistencia do catalogo |
 | `test_data_management.py` | Isolamento de dados entre testes |
 | `test_ux_quality.py` | Encontrabilidade e usabilidade da API |
@@ -263,22 +265,22 @@ Os exemplos abaixo foram gerados com `make reports` e resumidos em texto para ev
 
 | Relatorio | Resultado | Leitura |
 |---|---|---|
-| `reports/quality-summary.md` | `66` testes nos gates | Visao geral para CI e decisao de release |
-| `reports/pytest-report.html` | `45 passed, 21 deselected` | Quality gate funcional verde |
-| `reports/release-gate-report.html` | `8 failed, 58 deselected` | Bugs criticos/seguranca reproduziveis |
-| `reports/known-bugs-report.html` | `13 failed, 53 deselected` | Bugs diagnosticos e UX reproduziveis |
+| `reports/quality-summary.md` | `72` testes nos gates | Visao geral para CI e decisao de release |
+| `reports/pytest-report.html` | `49 passed, 23 deselected` | Quality gate funcional verde |
+| `reports/release-gate-report.html` | `10 failed, 62 deselected` | Bugs criticos/seguranca reproduziveis |
+| `reports/known-bugs-report.html` | `13 failed, 59 deselected` | Bugs diagnosticos e UX reproduziveis |
 
 Exemplo do `quality-summary.md`:
 
 ```text
-Quality gate funcional: 45/45 passed
-Release blockers conhecidos: 8
+Quality gate funcional: 49/49 passed
+Release blockers conhecidos: 10
 Bugs diagnosticos conhecidos: 13
 
 Quality Lenses:
 - API contract and schema: 40 tests mapped
 - Negative and edge cases: 25 tests mapped
-- Security and authorization: 6 tests mapped
+- Security and authorization: 12 tests mapped
 - Test data management: 4 tests mapped
 - UX and API usability: 6 tests mapped
 - Resilience: 5 tests mapped

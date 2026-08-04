@@ -11,11 +11,15 @@ Exemplos de cenarios fora do happy path:
 - token ausente, token invalido e esquema de autorizacao malformado;
 - servico inexistente;
 - variacoes adversariais de ID inexistente, incluindo entrada SQL-like, unicode parecido, string enorme e whitespace;
+- IDs encoded com SQL-like, null byte e path traversal;
+- payloads de busca com SQL-like, NoSQL-like, script, path traversal e command-like;
+- verificacao de ausencia de vazamento de stack trace, secret, token e caminhos locais em erros;
+- Authorization excessivamente longo;
 - JSON malformado;
 - content-type nao JSON;
 - query ausente, vazia ou em branco;
 - paginacao com valores negativos, zero, nao numericos e pagina fora do intervalo;
-- webhook sem assinatura, com assinatura invalida, assinatura gerada com segredo incorreto e assinatura de outro payload;
+- webhook sem assinatura, com assinatura invalida, algoritmo malformado, assinatura gerada com segredo incorreto e assinatura de outro payload;
 - payload grande de webhook;
 - query longa com caracteres Unicode;
 - metodo HTTP nao suportado;
@@ -61,7 +65,7 @@ O `release-gate` mostra os bugs criticos ou de seguranca que deveriam bloquear r
 Sim. O CI foi desenhado para separar comportamento aceito de defeitos conhecidos.
 
 - `make test` roda `pytest -m "not known_bug"` e deve passar.
-- `make release-gate` roda `known_bug_high or security` e deve falhar localmente enquanto houver bugs criticos sem waiver.
+- `make release-gate` roda `known_bug and (known_bug_high or security)` e deve falhar localmente enquanto houver bugs criticos sem waiver.
 - `make test-known-bugs-diagnostic` roda bugs conhecidos nao criticos como diagnostico.
 - o GitHub Actions publica HTML, JUnit XML e `quality-summary.md`, mantendo os bugs conhecidos visiveis sem transformar a existencia deles em falha inesperada do pipeline.
 
