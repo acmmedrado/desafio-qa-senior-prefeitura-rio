@@ -60,6 +60,28 @@ def test_list_services_invalid_pagination_values_fall_back_to_safe_defaults(api)
     assert len(body["data"]) == 10
 
 
+@pytest.mark.negative
+def test_list_services_zero_pagination_values_fall_back_to_safe_defaults(api):
+    response = api.get(f"{api.base_url}/api/v1/services?page=0&per_page=0", timeout=3)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["page"] == 1
+    assert body["per_page"] == 10
+    assert len(body["data"]) == 10
+
+
+@pytest.mark.negative
+def test_list_services_non_numeric_pagination_values_fall_back_to_safe_defaults(api):
+    response = api.get(f"{api.base_url}/api/v1/services?page=abc&per_page=xyz", timeout=3)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["page"] == 1
+    assert body["per_page"] == 10
+    assert len(body["data"]) == 10
+
+
 @pytest.mark.contract
 def test_get_existing_service_by_id(api):
     response = api.get(f"{api.base_url}/api/v1/services/s002", timeout=3)

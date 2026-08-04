@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: Catalogo de Servicos Publicos API
+  version: 1.0.0
+  description: Contrato observado da API usada no desafio de QA Senior.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Status da API
+      responses:
+        "200":
+          description: API operacional
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /api/v1/services:
+    get:
+      summary: Lista servicos publicos
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedServices"
+  /api/v1/services/{id}:
+    get:
+      summary: Detalhe de um servico
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      responses:
+        "200":
+          description: Servico encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Servico nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/services/search:
+    post:
+      summary: Busca textual de servicos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+      responses:
+        "200":
+          description: Resultado de busca
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponse"
+        "400":
+          description: Corpo invalido ou query invalida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/services/{id}/recommendations:
+    get:
+      summary: Recomendacoes relacionadas
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recomendacoes encontradas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecommendationsResponse"
+        "401":
+          description: Token ausente ou invalido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Servico nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/services/{id}/favorite:
+    post:
+      summary: Marca servico como favorito
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Favorito salvo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, service_id]
+                properties:
+                  message:
+                    type: string
+                  service_id:
+                    type: string
+        "401":
+          description: Token ausente ou invalido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Servico nao encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/webhooks/catalog:
+    post:
+      summary: Recebe atualizacoes externas do catalogo
+      parameters:
+        - name: X-Signature-256
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: "^sha256=[a-f0-9]{64}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Atualizacao aceita
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, received]
+                properties:
+                  status:
+                    type: string
+                    enum: [accepted]
+                  received:
+                    type: string
+                    format: date-time
+        "400":
+          description: Payload invalido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Assinatura ausente ou invalida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    ServiceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: "^s[0-9]{3}$"
+  schemas:
+    Health:
+      type: object
+      required: [status, timestamp, version, services]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        services:
+          type: integer
+          minimum: 0
+    Service:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - category
+        - tags
+        - organization
+        - view_count
+        - active
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+        tags:
+          type: array
+          items:
+            type: string
+        organization:
+          type: string
+          minLength: 1
+        url:
+          type: string
+        view_count:
+          type: integer
+          minimum: 0
+        active:
+          type: boolean
+    PaginatedServices:
+      type: object
+      required: [data, total, page, per_page, total_pages]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 1
+        per_page:
+          type: integer
+          minimum: 1
+        total_pages:
+          type: integer
+          minimum: 0
+    SearchResponse:
+      type: object
+      required: [results, total, query]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        total:
+          type: integer
+          minimum: 0
+        query:
+          type: string
+    RecommendationsResponse:
+      type: object
+      required: [service_id, recommendations]
+      properties:
+        service_id:
+          type: string
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          minLength: 1

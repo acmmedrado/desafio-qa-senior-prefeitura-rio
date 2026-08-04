@@ -95,7 +95,7 @@ Os testes foram separados por dominio para facilitar manutencao:
 - `test_auth_and_recommendations.py`: autorizacao, favoritos e recomendacoes.
 - `test_webhook.py`: contrato do webhook e assinatura HMAC.
 
-Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais.
+Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
 
 ## Matriz de cobertura
 
@@ -128,8 +128,8 @@ Uma execucao local real esta registrada em `docs/EXECUTION.md`.
 
 Resumo:
 
-- `pytest -m "not known_bug"`: 20 testes passaram.
-- `pytest -m known_bug`: 16 testes falharam, todos associados aos bugs documentados.
+- `pytest -m "not known_bug"`: 30 testes passaram.
+- `pytest -m known_bug`: 17 testes falharam, todos associados aos bugs documentados.
 - `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
 
 ## Performance
@@ -141,7 +141,15 @@ Os thresholds atuais foram definidos como uma primeira barra de producao para um
 - `p99 < 750ms`
 - `checks > 99%`
 
-O cenario sobe ate 50 usuarios virtuais por ser um teste smoke de CI. Em uma etapa pre-producao, eu adicionaria cenarios mais longos, ramp-up com centenas de usuarios, teste de pico e teste de endurance.
+O cenario de CI sobe ate 50 usuarios virtuais por ser um smoke test. Uma forma de justificar esse numero: se o catalogo tiver 20 mil acessos/dia e 20% deles ocorrerem em uma janela de pico de 2 horas, isso representa cerca de 33 requisicoes/minuto. Com usuarios navegando por alguns segundos entre busca, detalhe e recomendacao, 50 VUs e uma carga conservadora para detectar regressao sem deixar o CI lento.
+
+Tambem existe um cenario manual de spike/stress:
+
+```bash
+make perf-spike
+```
+
+Ele sobe ate 150 VUs e usa thresholds menos estritos para observar comportamento sob aumento subido de demanda.
 
 ## CI
 
@@ -150,10 +158,12 @@ O workflow `.github/workflows/quality.yml`:
 1. Sobe a API com Docker Compose.
 2. Instala dependencias Python.
 3. Executa o quality gate funcional, excluindo bugs conhecidos.
-4. Executa os testes de bugs conhecidos como diagnostico nao bloqueante.
-5. Publica os relatorios como artefato.
-6. Executa o smoke de performance com k6.
-7. Derruba a API ao final.
+4. Executa lint/format dos testes com `ruff`.
+5. Executa os testes de bugs conhecidos como diagnostico nao bloqueante.
+6. Gera um resumo consolidado no GitHub Step Summary.
+7. Publica os relatorios como artefato.
+8. Executa o smoke de performance com k6.
+9. Derruba a API ao final.
 
 Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos. O gate principal, porem, fica verde para os comportamentos que ja estao corretos.
 

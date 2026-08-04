@@ -4,7 +4,6 @@ import time
 import pytest
 import requests
 
-
 DEFAULT_TOKEN = "qa-challenge-token"
 
 

@@ -25,6 +25,11 @@ jobs:
       - name: Install test dependencies
         run: pip install -r requirements.txt
 
+      - name: Lint test code
+        run: |
+          ruff check tests scripts
+          ruff format --check tests scripts
+
       - name: Run functional API tests
         run: |
           mkdir -p reports
@@ -41,6 +46,12 @@ jobs:
             --junitxml=reports/known-bugs-junit.xml \
             --html=reports/known-bugs-report.html \
             --self-contained-html
+
+      - name: Generate quality summary
+        if: always()
+        run: |
+          python scripts/quality_summary.py
+          cat reports/quality-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload functional test reports
         if: always()

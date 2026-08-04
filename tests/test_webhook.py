@@ -24,6 +24,51 @@ def test_webhook_accepts_valid_hmac_signature(api):
     assert response.json()["status"] == "accepted"
 
 
+@pytest.mark.contract
+def test_webhook_accepts_large_valid_payload(api):
+    payload = {"event": "service.bulk_updated", "ids": [f"s{i:03d}" for i in range(1, 201)]}
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+
+    response = api.post(
+        f"{api.base_url}/api/v1/webhooks/catalog",
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Signature-256": webhook_signature(body),
+        },
+        timeout=3,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "accepted"
+
+
+@pytest.mark.contract
+def test_webhook_replay_with_same_signature_is_currently_accepted(api):
+    payload = {"event": "service.updated", "id": "s002", "nonce": "replay-check"}
+    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    headers = {
+        "Content-Type": "application/json",
+        "X-Signature-256": webhook_signature(body),
+    }
+
+    first_response = api.post(
+        f"{api.base_url}/api/v1/webhooks/catalog",
+        data=body,
+        headers=headers,
+        timeout=3,
+    )
+    second_response = api.post(
+        f"{api.base_url}/api/v1/webhooks/catalog",
+        data=body,
+        headers=headers,
+        timeout=3,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+
+
 @pytest.mark.negative
 def test_webhook_rejects_invalid_json(api):
     response = api.post(

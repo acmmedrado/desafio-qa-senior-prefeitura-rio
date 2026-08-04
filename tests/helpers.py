@@ -1,7 +1,6 @@
 import hashlib
 import hmac
 
-
 WEBHOOK_SECRET = "webhook-secret-2024"
 
 
