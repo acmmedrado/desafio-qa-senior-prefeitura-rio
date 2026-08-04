@@ -59,7 +59,10 @@ Resultado atual: `total_pages` igual a `1`.
 
 Resultado esperado: `total_pages` igual a `2`.
 
-Teste automatizado: `tests/test_services.py::test_list_services_default_pagination_contract`.
+Testes automatizados:
+
+- `tests/test_services.py::test_list_services_default_pagination_contract`
+- `tests/test_services.py::test_list_services_total_pages_uses_ceiling_for_smaller_page_size`
 
 ## BUG-004 - Webhook aceita payload sem assinatura HMAC valida
 
@@ -83,6 +86,7 @@ Testes automatizados:
 
 - `tests/test_webhook.py::test_webhook_rejects_missing_signature`
 - `tests/test_webhook.py::test_webhook_rejects_invalid_signature`
+- `tests/test_webhook.py::test_webhook_rejects_signature_from_different_payload`
 
 ## BUG-005 - Recomendacoes sao acessiveis sem autenticacao
 
@@ -101,3 +105,23 @@ Resultado atual: `200 OK`.
 Resultado esperado: `401 Unauthorized` sem `Authorization: Bearer qa-challenge-token`.
 
 Teste automatizado: `tests/test_auth_and_recommendations.py::test_recommendations_requires_authorization`.
+
+## BUG-006 - Busca sem resultados retorna `null` em vez de lista vazia
+
+Severidade: Baixa
+
+Impacto: clientes precisam tratar dois tipos possiveis para `results`: lista quando ha resultados e `null` quando nao ha. Isso aumenta complexidade no front-end e pode causar erro em consumidores que esperam sempre uma colecao iteravel.
+
+Como reproduzir:
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"termo-sem-correspondencia"}'
+```
+
+Resultado atual: `200 OK` com `"results": null`.
+
+Resultado esperado: `200 OK` com `"results": []`.
+
+Teste automatizado: `tests/test_search.py::test_search_returns_empty_result_set_when_no_service_matches`.

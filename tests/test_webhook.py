@@ -65,3 +65,19 @@ def test_webhook_rejects_invalid_signature(api):
 
     assert response.status_code == 401
     assert response.json()["error"] == "invalid webhook signature"
+
+
+@pytest.mark.negative
+@pytest.mark.known_bug
+def test_webhook_rejects_signature_from_different_payload(api):
+    signed_body = json.dumps({"event": "service.updated", "id": "s002"}).encode("utf-8")
+
+    response = api.post(
+        f"{api.base_url}/api/v1/webhooks/catalog",
+        json={"event": "service.deleted", "id": "s002"},
+        headers={"X-Signature-256": webhook_signature(signed_body)},
+        timeout=3,
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "invalid webhook signature"

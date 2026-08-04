@@ -19,7 +19,7 @@ pytest -m "not known_bug"
 Resultado observado:
 
 ```text
-13 passed, 7 deselected
+17 passed, 10 deselected
 ```
 
 Suite de bugs conhecidos:
@@ -31,7 +31,7 @@ pytest -m known_bug
 Resultado observado:
 
 ```text
-7 failed, 13 deselected
+10 failed, 17 deselected
 ```
 
 As falhas sao esperadas enquanto os bugs descritos em `docs/BUGS.md` nao forem corrigidos.
