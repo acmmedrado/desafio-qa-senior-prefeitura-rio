@@ -90,6 +90,7 @@ docs/EXECUTION.md            Resultado de uma execucao local real
 docs/RISK_TRACEABILITY.md     Risco, requisito, teste e evidencia
 docs/RELEASE_WAIVERS.md       Politica de waiver para bugs bloqueantes
 docs/UX_QUALITY.md           Avaliacao da API pela lente de usabilidade
+docs/QA_EVALUATION.md        Avaliacao da estrategia de QA e criterios de suficiencia
 .github/workflows/quality.yml CI de qualidade
 ```
 
@@ -105,6 +106,8 @@ Os testes foram separados por dominio para facilitar manutencao:
 - `test_data_management.py`: isolamento de snapshot e verificacao de ausencia de mutacao compartilhada.
 
 Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. As chamadas HTTP passam por `tests/client.py`, que centraliza URL base, timeout, paths e headers, deixando os testes focados na intencao do comportamento. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
+
+Uma avaliacao objetiva da suficiencia da cobertura, realismo dos testes de performance, reprodutibilidade dos bugs, comportamento do CI e justificativa das ferramentas esta em `docs/QA_EVALUATION.md`.
 
 ## Test data management
 
