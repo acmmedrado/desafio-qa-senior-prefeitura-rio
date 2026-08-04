@@ -46,6 +46,52 @@ def test_search_matches_category(api):
     assert {item["id"] for item in body["results"]} == {"s001", "s011"}
 
 
+@pytest.mark.contract
+@pytest.mark.known_bug
+def test_search_is_accent_insensitive_for_user_typed_text(api):
+    response = api.post(
+        f"{api.base_url}/api/v1/services/search",
+        json={"query": "vacinacao"},
+        timeout=3,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] >= 1
+    assert any(item["id"] == "s002" for item in body["results"])
+
+
+@pytest.mark.contract
+@pytest.mark.known_bug
+def test_search_trims_surrounding_spaces(api):
+    response = api.post(
+        f"{api.base_url}/api/v1/services/search",
+        json={"query": "  saude  "},
+        timeout=3,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["query"] == "saude"
+    assert body["total"] >= 2
+    assert {item["id"] for item in body["results"]} >= {"s002", "s010"}
+
+
+@pytest.mark.contract
+@pytest.mark.known_bug
+def test_search_matches_tags_for_common_user_terms(api):
+    response = api.post(
+        f"{api.base_url}/api/v1/services/search",
+        json={"query": "onibus"},
+        timeout=3,
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] >= 1
+    assert any(item["id"] == "s006" for item in body["results"])
+
+
 @pytest.mark.negative
 def test_search_rejects_malformed_json(api):
     response = api.post(

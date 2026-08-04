@@ -115,7 +115,7 @@ Uma execucao local real esta registrada em `docs/EXECUTION.md`.
 Resumo:
 
 - `pytest -m "not known_bug"`: 17 testes passaram.
-- `pytest -m known_bug`: 10 testes falharam, todos associados aos bugs documentados.
+- `pytest -m known_bug`: 13 testes falharam, todos associados aos bugs documentados.
 - `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
 
 ## Performance

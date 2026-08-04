@@ -125,3 +125,39 @@ Resultado atual: `200 OK` com `"results": null`.
 Resultado esperado: `200 OK` com `"results": []`.
 
 Teste automatizado: `tests/test_search.py::test_search_returns_empty_result_set_when_no_service_matches`.
+
+## BUG-007 - Busca nao tolera acentos, espacos e termos de tags
+
+Severidade: Media
+
+Impacto: usuarios reais tendem a digitar termos sem acento, com espacos acidentais ou palavras comuns que aparecem como tags. A busca atual pode retornar zero resultados para servicos existentes, criando falsa indisponibilidade do servico.
+
+Exemplos de reproducao:
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"vacinacao"}'
+```
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"  saude  "}'
+```
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"onibus"}'
+```
+
+Resultado atual: a API retorna zero resultados ou `results: null` para termos que deveriam encontrar servicos relevantes.
+
+Resultado esperado: busca normalizada por acento/espaco e considerando `tags`, retornando servicos como `s002`, `s010` e `s006` nos exemplos acima.
+
+Testes automatizados:
+
+- `tests/test_search.py::test_search_is_accent_insensitive_for_user_typed_text`
+- `tests/test_search.py::test_search_trims_surrounding_spaces`
+- `tests/test_search.py::test_search_matches_tags_for_common_user_terms`
