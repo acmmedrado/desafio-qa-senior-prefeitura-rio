@@ -157,7 +157,7 @@ def main() -> int:
         line("Release-blocking known bugs", release_gate),
         line("Non-blocking known bug diagnostics", known_bugs),
         "",
-        "Release-blocking known bugs represent high-severity/security defects and should keep the release gate red until fixed or formally waived.",
+        "Release-blocking known bugs represent high-severity/security defects. Release should not be approved until they are fixed or formally waived.",
         "",
         "## Quality Lenses",
         "",

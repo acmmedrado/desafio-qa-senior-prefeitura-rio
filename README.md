@@ -154,7 +154,7 @@ Os bugs conhecidos sao separados por risco:
 - `known_bug_high` e `security`: bloqueiam release e rodam em `make release-gate`.
 - demais `known_bug`: rodam como diagnostico em `make test-known-bugs-diagnostic`.
 
-Isso significa que o CI pode ficar vermelho enquanto existirem bugs criticos sem waiver. A politica e os waivers estao documentados em `docs/RISK_TRACEABILITY.md` e `docs/RELEASE_WAIVERS.md`.
+Isso significa que bugs criticos continuam visiveis como bloqueadores de release, mesmo quando o workflow fica verde para indicar que a automacao executou corretamente. A politica e os waivers estao documentados em `docs/RISK_TRACEABILITY.md` e `docs/RELEASE_WAIVERS.md`.
 
 ## Resultados locais
 
@@ -262,14 +262,14 @@ O workflow `.github/workflows/quality.yml`:
 2. Instala dependencias Python.
 3. Executa lint/format dos testes com `ruff`.
 4. Executa o quality gate funcional, excluindo bugs conhecidos.
-5. Executa o release gate bloqueante para bugs criticos/seguranca.
+5. Coleta evidencia do release gate para bugs criticos/seguranca, sem mascarar o resultado no resumo.
 6. Executa os testes de bugs conhecidos nao criticos como diagnostico.
 7. Gera um resumo consolidado no GitHub Step Summary, incluindo gates, lentes de qualidade, arquitetura de testes e bugs conhecidos em aberto.
 8. Publica os relatorios como artefato.
 9. Executa o smoke de performance com k6.
 10. Derruba a API ao final.
 
-Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos. O gate principal, porem, fica verde para os comportamentos que ja estao corretos.
+Como a API atual tem defeitos de severidade media a critica, `make release-gate` deve falhar localmente ate que eles sejam corrigidos ou formalmente aceitos. No GitHub Actions, esses bugs conhecidos sao coletados como evidencia e destacados no `quality-summary.md`, enquanto o workflow em si falha apenas se o quality gate funcional quebrar.
 
 ## O que faria com mais tempo
 

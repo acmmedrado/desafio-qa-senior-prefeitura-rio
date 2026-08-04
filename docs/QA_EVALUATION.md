@@ -57,11 +57,11 @@ O `release-gate` mostra os bugs criticos ou de seguranca que deveriam bloquear r
 Sim. O CI foi desenhado para separar comportamento aceito de defeitos conhecidos.
 
 - `make test` roda `pytest -m "not known_bug"` e deve passar.
-- `make release-gate` roda `known_bug_high or security` e deve falhar enquanto houver bugs criticos sem waiver.
+- `make release-gate` roda `known_bug_high or security` e deve falhar localmente enquanto houver bugs criticos sem waiver.
 - `make test-known-bugs-diagnostic` roda bugs conhecidos nao criticos como diagnostico.
-- o GitHub Actions publica HTML, JUnit XML e `quality-summary.md`.
+- o GitHub Actions publica HTML, JUnit XML e `quality-summary.md`, mantendo os bugs conhecidos visiveis sem transformar a existencia deles em falha inesperada do pipeline.
 
-Esse desenho evita uma interpretacao perigosa de "CI verde significa sem bugs". O quality gate principal fica verde para comportamentos aceitos, mas o release gate permanece vermelho enquanto existirem falhas criticas documentadas.
+Esse desenho evita uma interpretacao perigosa de "CI verde significa sem bugs". O quality gate principal fica verde para comportamentos aceitos, enquanto o resumo do CI continua apontando que o release esta bloqueado pelos bugs criticos documentados.
 
 ## As ferramentas escolhidas tem justificativa?
 

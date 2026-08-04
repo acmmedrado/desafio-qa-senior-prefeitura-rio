@@ -19,9 +19,11 @@
 ## Politica de Gate
 
 - `make test`: valida comportamentos corretos e deve ficar verde.
-- `make release-gate`: executa bugs conhecidos de alta severidade ou seguranca e deve bloquear release enquanto falhar.
+- `make release-gate`: executa bugs conhecidos de alta severidade ou seguranca e deve bloquear release enquanto falhar localmente.
 - `make test-known-bugs-diagnostic`: executa riscos medios/baixos e UX como diagnostico nao bloqueante.
 - `make reports`: gera JUnit, HTML e resumo consolidado.
+
+No CI, os bugs conhecidos sao coletados como evidencia e publicados no resumo consolidado. O workflow deve falhar apenas quando o quality gate de comportamentos aceitos falhar.
 
 Estado atual validado localmente:
 
