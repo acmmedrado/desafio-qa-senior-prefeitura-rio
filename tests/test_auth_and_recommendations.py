@@ -2,17 +2,19 @@ import pytest
 
 
 @pytest.mark.negative
-def test_favorite_requires_authorization(api):
-    response = api.post(f"{api.base_url}/api/v1/services/s001/favorite", timeout=3)
+def test_favorite_requires_authorization(api, catalog):
+    service = catalog.by_title("Cartão Rio")
+    response = api.post(f"{api.base_url}/api/v1/services/{service['id']}/favorite", timeout=3)
 
     assert response.status_code == 401
     assert response.json()["error"] == "missing authorization header"
 
 
 @pytest.mark.negative
-def test_favorite_rejects_invalid_token(api):
+def test_favorite_rejects_invalid_token(api, catalog):
+    service = catalog.by_title("Cartão Rio")
     response = api.post(
-        f"{api.base_url}/api/v1/services/s001/favorite",
+        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
         headers={"Authorization": "Bearer wrong-token"},
         timeout=3,
     )
@@ -22,9 +24,10 @@ def test_favorite_rejects_invalid_token(api):
 
 
 @pytest.mark.negative
-def test_favorite_rejects_malformed_authorization_scheme(api):
+def test_favorite_rejects_malformed_authorization_scheme(api, catalog):
+    service = catalog.by_title("Cartão Rio")
     response = api.post(
-        f"{api.base_url}/api/v1/services/s001/favorite",
+        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
         headers={"Authorization": "Token qa-challenge-token"},
         timeout=3,
     )
@@ -34,9 +37,10 @@ def test_favorite_rejects_malformed_authorization_scheme(api):
 
 
 @pytest.mark.contract
-def test_favorite_accepts_valid_token(api, auth_headers):
+def test_favorite_accepts_valid_token(api, auth_headers, catalog):
+    service = catalog.by_title("Cartão Rio")
     response = api.post(
-        f"{api.base_url}/api/v1/services/s001/favorite",
+        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
         headers=auth_headers,
         timeout=3,
     )
@@ -44,14 +48,14 @@ def test_favorite_accepts_valid_token(api, auth_headers):
     assert response.status_code == 200
     assert response.json() == {
         "message": "added to favorites",
-        "service_id": "s001",
+        "service_id": service["id"],
     }
 
 
 @pytest.mark.negative
-def test_favorite_unknown_service_returns_404(api, auth_headers):
+def test_favorite_unknown_service_returns_404(api, auth_headers, catalog):
     response = api.post(
-        f"{api.base_url}/api/v1/services/s999/favorite",
+        f"{api.base_url}/api/v1/services/{catalog.unknown_id()}/favorite",
         headers=auth_headers,
         timeout=3,
     )
@@ -72,24 +76,25 @@ def test_recommendations_requires_authorization(api):
 
 
 @pytest.mark.contract
-def test_recommendations_returns_same_category_services_when_authorized(api, auth_headers):
+def test_recommendations_returns_same_category_services_when_authorized(api, auth_headers, catalog):
+    service = catalog.by_title("Vacinação Gratuita")
     response = api.get(
-        f"{api.base_url}/api/v1/services/s002/recommendations",
+        f"{api.base_url}/api/v1/services/{service['id']}/recommendations",
         headers=auth_headers,
         timeout=3,
     )
 
     assert response.status_code == 200
     body = response.json()
-    assert body["service_id"] == "s002"
-    assert all(item["category"] == "saude" for item in body["recommendations"])
-    assert all(item["id"] != "s002" for item in body["recommendations"])
+    assert body["service_id"] == service["id"]
+    assert all(item["category"] == service["category"] for item in body["recommendations"])
+    assert all(item["id"] != service["id"] for item in body["recommendations"])
 
 
 @pytest.mark.negative
-def test_recommendations_unknown_service_returns_404_when_authorized(api, auth_headers):
+def test_recommendations_unknown_service_returns_404_when_authorized(api, auth_headers, catalog):
     response = api.get(
-        f"{api.base_url}/api/v1/services/s999/recommendations",
+        f"{api.base_url}/api/v1/services/{catalog.unknown_id()}/recommendations",
         headers=auth_headers,
         timeout=3,
     )

@@ -6,8 +6,9 @@ from tests.helpers import webhook_signature
 
 
 @pytest.mark.contract
-def test_webhook_accepts_valid_hmac_signature(api):
-    payload = {"event": "service.updated", "id": "s002", "active": True}
+def test_webhook_accepts_valid_hmac_signature(api, catalog):
+    service = catalog.by_title("Vacinação Gratuita")
+    payload = {"event": "service.updated", "id": service["id"], "active": True}
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
 
     response = api.post(

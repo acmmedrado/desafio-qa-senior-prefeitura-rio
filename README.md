@@ -100,8 +100,21 @@ Os testes foram separados por dominio para facilitar manutencao:
 - `test_search.py`: busca por texto e validacoes de entrada.
 - `test_auth_and_recommendations.py`: autorizacao, favoritos e recomendacoes.
 - `test_webhook.py`: contrato do webhook e assinatura HMAC.
+- `test_data_management.py`: isolamento de snapshot e verificacao de ausencia de mutacao compartilhada.
 
 Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
+
+## Test data management
+
+A API do desafio nao possui endpoints de criacao/remocao de servicos, entao a estrategia implementada evita depender de estado mutavel compartilhado:
+
+- cada teste recebe uma `requests.Session` propria, fechada ao final da fixture;
+- `catalog_snapshot` busca um snapshot fresco do catalogo por teste e retorna uma copia independente;
+- seletores como `catalog.by_title(...)`, `catalog.by_category(...)` e `catalog.unknown_id()` centralizam dados conhecidos;
+- testes de favoritos e webhook verificam que essas operacoes nao alteram o catalogo base;
+- testes de isolamento garantem que mutacoes locais no snapshot de um teste nao vazam para outro.
+
+Essa abordagem torna a suite adequada para a API estatica do desafio e deixa claro onde entrariam setup/teardown ou factories caso a API tivesse persistencia.
 
 ## Matriz de cobertura
 
@@ -146,7 +159,7 @@ Com a API rodando localmente em `http://localhost:8080`:
 | Comando | Resultado esperado | Interpretacao |
 |---|---:|---|
 | `make lint` | passou | Codigo de testes e scripts formatado/validado com `ruff` |
-| `make test` | 34 passed | Quality gate funcional verde |
+| `make test` | 38 passed | Quality gate funcional verde |
 | `make release-gate` | 5 failed | Bugs criticos/seguranca bloqueando release |
 | `make test-known-bugs-diagnostic` | 12 failed | Bugs medios/baixos e riscos de UX documentados |
 | `make perf` | passou | Smoke de performance com `0.00%` de falhas HTTP |
@@ -154,7 +167,7 @@ Com a API rodando localmente em `http://localhost:8080`:
 Resumo do relatorio consolidado:
 
 ```text
-Quality gate: 34 passed, 0 failed
+Quality gate: 38 passed, 0 failed
 Release-blocking known bugs: 5 failed
 Non-blocking known bug diagnostics: 12 failed
 Performance smoke: 0.00% HTTP failures, dropped_iterations=0

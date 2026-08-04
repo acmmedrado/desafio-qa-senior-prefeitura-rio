@@ -19,7 +19,7 @@ pytest -m "not known_bug"
 Resultado observado:
 
 ```text
-34 passed, 17 deselected
+38 passed, 17 deselected
 ```
 
 Release gate bloqueante:

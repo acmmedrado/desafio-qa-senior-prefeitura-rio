@@ -1,5 +1,6 @@
 import os
 import time
+from copy import deepcopy
 
 import pytest
 import requests
@@ -40,4 +41,39 @@ def api(base_url):
     session = requests.Session()
     session.headers.update({"Accept": "application/json"})
     session.base_url = base_url
-    return session
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def catalog_snapshot(api):
+    response = api.get(f"{api.base_url}/api/v1/services?per_page=100", timeout=3)
+    response.raise_for_status()
+    return deepcopy(response.json()["data"])
+
+
+@pytest.fixture
+def catalog(catalog_snapshot):
+    class CatalogData:
+        def __init__(self, services):
+            self.services = services
+
+        def by_id(self, service_id):
+            return next(service for service in self.services if service["id"] == service_id)
+
+        def by_title(self, title):
+            return next(service for service in self.services if service["title"] == title)
+
+        def by_category(self, category):
+            return next(service for service in self.services if service["category"] == category)
+
+        def by_tag(self, tag):
+            return next(service for service in self.services if tag in service["tags"])
+
+        def unknown_id(self):
+            existing_ids = {service["id"] for service in self.services}
+            candidate = "s999"
+            assert candidate not in existing_ids
+            return candidate
+
+    return CatalogData(catalog_snapshot)

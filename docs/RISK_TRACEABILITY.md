@@ -14,6 +14,7 @@
 | API deve lidar com carga curta | Performance | `performance/catalog-api.k6.js` | CI smoke |
 | API deve lidar com pico manual | Performance | `performance/spike.k6.js` | Execucao manual |
 | API deve resistir a entradas extremas | Resiliencia | `tests/test_resilience.py`, payload grande de webhook | Quality gate |
+| Testes nao devem compartilhar estado mutavel | Test data management | `tests/test_data_management.py`, fixtures `catalog_snapshot` e `catalog` | Quality gate |
 
 ## Politica de Gate
 
@@ -24,7 +25,7 @@
 
 Estado atual validado localmente:
 
-- Quality gate: 34 testes passando.
+- Quality gate: 38 testes passando.
 - Release gate: 5 falhas bloqueantes.
 - Diagnostico nao bloqueante: 12 falhas conhecidas.
 
