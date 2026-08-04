@@ -161,3 +161,39 @@ Testes automatizados:
 - `tests/test_search.py::test_search_is_accent_insensitive_for_user_typed_text`
 - `tests/test_search.py::test_search_trims_surrounding_spaces`
 - `tests/test_search.py::test_search_matches_tags_for_common_user_terms`
+
+## BUG-008 - Busca nao atende linguagem de necessidade e ordenacao por relevancia
+
+Severidade: Media
+
+Impacto: usuarios de servicos publicos costumam buscar pela necessidade que possuem, nao pelo nome oficial do servico. Se a API nao entende termos como `matricular filho` ou `abrir comercio`, o front-end pode exibir zero resultados para uma necessidade atendida pelo catalogo. Alem disso, sem criterio de relevancia, um resultado menos adequado pode aparecer antes do servico mais provavel.
+
+Exemplos de reproducao:
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"matricular filho"}'
+```
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"abrir comercio"}'
+```
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/services/search \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"familia"}'
+```
+
+Resultado atual: buscas por necessidade podem retornar zero resultados, e a ordenacao nao prioriza necessariamente o servico cujo titulo e mais relevante.
+
+Resultado esperado: a busca deveria considerar sinonimos/termos populares e ordenar por relevancia, priorizando match em titulo e tags antes de descricao.
+
+Testes automatizados:
+
+- `tests/test_ux_quality.py::test_search_supports_need_based_language_for_school_enrollment`
+- `tests/test_ux_quality.py::test_search_supports_need_based_language_for_opening_a_business`
+- `tests/test_ux_quality.py::test_search_prioritizes_title_matches_over_description_matches`

@@ -81,6 +81,7 @@ tests/                       Testes funcionais e de contrato com pytest
 performance/catalog-api.k6.js Teste de carga/smoke com k6
 docs/BUGS.md                 Bugs encontrados, impacto e reproducao
 docs/EXECUTION.md            Resultado de uma execucao local real
+docs/UX_QUALITY.md           Avaliacao da API pela lente de usabilidade
 .github/workflows/quality.yml CI de qualidade
 ```
 
@@ -108,14 +109,27 @@ Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefa
 | `POST /api/v1/services/:id/favorite` | Sim | Sim | Sim | Sim | Nao |
 | `POST /api/v1/webhooks/catalog` | Sim | Sim | Sim | Sim | Sim |
 
+## Qualidade orientada a experiencia
+
+Alem de validar status code e contrato, esta entrega avalia se a API sustenta uma experiencia publica encontravel, previsivel e inclusiva. A analise completa esta em `docs/UX_QUALITY.md`.
+
+Foram adicionados testes para:
+
+- jornada real de busca, detalhe e recomendacao;
+- clareza minima do conteudo dos servicos;
+- estabilidade das categorias para consumo no front-end;
+- busca por linguagem de necessidade;
+- ordenacao por relevancia;
+- normalizacao de termos comuns digitados por usuarios.
+
 ## Resultados observados
 
 Uma execucao local real esta registrada em `docs/EXECUTION.md`.
 
 Resumo:
 
-- `pytest -m "not known_bug"`: 17 testes passaram.
-- `pytest -m known_bug`: 13 testes falharam, todos associados aos bugs documentados.
+- `pytest -m "not known_bug"`: 20 testes passaram.
+- `pytest -m known_bug`: 16 testes falharam, todos associados aos bugs documentados.
 - `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
 
 ## Performance
