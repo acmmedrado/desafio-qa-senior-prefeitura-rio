@@ -2,128 +2,114 @@
 
 [![quality](https://github.com/acmmedrado/desafio-qa-senior-prefeitura-rio/actions/workflows/quality.yml/badge.svg)](https://github.com/acmmedrado/desafio-qa-senior-prefeitura-rio/actions/workflows/quality.yml)
 
-Esta entrega monta uma camada de qualidade para o Catalogo de Servicos Publicos. O foco foi validar comportamento de API, seguranca basica, erros, bordas, performance e capacidade de execucao automatica em CI.
+Camada de qualidade para o **Catalogo de Servicos Publicos** da Prefeitura do Rio. A entrega valida comportamento de API, contrato, seguranca, bordas, UX da busca, resiliencia, performance e execucao automatica em CI.
 
-## Como executar
+## Visao Geral
 
-Suba a API:
+| Area | Status | Evidencia |
+|---|---|---|
+| Quality gate funcional | OK | `45/45` testes passando |
+| Release gate | Bloqueado | `8` bugs criticos/seguranca documentados |
+| Diagnostico de bugs | Mapeado | `13` falhas conhecidas de media/baixa severidade e UX |
+| Performance smoke | OK | `0.00%` falhas HTTP, `p95=601us`, `p99=1.14ms` |
+| CI | OK | Lint, testes, relatorios e k6 no GitHub Actions |
+
+**Leitura importante:** CI verde significa que a automacao executou corretamente. Nao significa liberacao automatica: o release segue bloqueado enquanto os bugs criticos/seguranca nao forem corrigidos ou formalmente aceitos em waiver.
+
+## Sumario
+
+- [Como Rodar](#como-rodar)
+- [Resultados Locais](#resultados-locais)
+- [Cobertura](#cobertura)
+- [Bugs Encontrados](#bugs-encontrados)
+- [Diferenciais do Desafio](#diferenciais-do-desafio)
+- [Arquitetura dos Testes](#arquitetura-dos-testes)
+- [Performance](#performance)
+- [CI e Relatorios](#ci-e-relatorios)
+- [O Que Faria Com Mais Tempo](#o-que-faria-com-mais-tempo)
+
+## Como Rodar
+
+### 1. Subir a API
 
 ```bash
 cd api
 docker compose up -d --build
 ```
 
-Instale as dependencias e rode os testes funcionais:
+A API fica disponivel em `http://localhost:8080`.
+
+### 2. Instalar dependencias
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pytest
 ```
 
-Tambem ha atalhos via `make`:
+Ou, pelo Makefile:
 
 ```bash
 make install
-make api
-make test
-make release-gate
-make test-known-bugs
-make perf
 ```
 
-Para rodar apenas o quality gate bloqueante, excluindo bugs ja documentados:
+### 3. Executar a suite principal
+
+```bash
+make test
+```
+
+Esse comando roda o quality gate funcional, excluindo bugs ja conhecidos:
 
 ```bash
 pytest -m "not known_bug"
 ```
 
-Para rodar somente os testes que documentam bugs conhecidos:
+### Comandos uteis
 
-```bash
-pytest -m known_bug
-```
-
-Para gerar relatorios locais:
-
-```bash
-mkdir -p reports
-pytest --junitxml=reports/pytest-junit.xml --html=reports/pytest-report.html --self-contained-html
-```
-
-Para rodar performance:
-
-```bash
-k6 run performance/catalog-api.k6.js
-```
+| Comando | O que faz | Quando usar |
+|---|---|---|
+| `make lint` | Roda `ruff check` e `ruff format --check` | Antes de commit/CI |
+| `make test` | Roda o quality gate funcional | Validar comportamento aceito |
+| `make release-gate` | Roda bugs criticos/seguranca conhecidos | Decisao de release |
+| `make test-known-bugs-diagnostic` | Roda bugs medios/baixos e UX | Diagnostico e acompanhamento |
+| `make reports` | Gera HTML, JUnit XML e resumo consolidado | Evidencia local |
+| `make perf` | Roda smoke de performance com k6 | Regressao de carga |
+| `make perf-spike` | Roda spike/stress manual | Pico fora do CI |
+| `make clean` | Remove caches e relatorios locais | Limpeza do workspace |
 
 Variaveis suportadas:
 
-- `BASE_URL`: URL da API. Padrao: `http://localhost:8080`
-- `AUTH_TOKEN`: token usado pelo k6. Padrao: `qa-challenge-token`
-- `WEBHOOK_SECRET`: segredo HMAC usado pelo k6. Padrao: `webhook-secret-2024`
+| Variavel | Padrao | Uso |
+|---|---|---|
+| `BASE_URL` | `http://localhost:8080` | URL da API testada |
+| `AUTH_TOKEN` | `qa-challenge-token` | Token usado pelo k6 |
+| `WEBHOOK_SECRET` | `webhook-secret-2024` | Secret HMAC do webhook |
 
-## O que foi priorizado
+## Resultados Locais
 
-Priorizei riscos que impediriam colocar a API em producao com confianca:
+Execucao local registrada em [docs/EXECUTION.md](docs/EXECUTION.md), com API em `http://localhost:8080`.
 
-- Integridade de contrato: formato de resposta, paginacao e consistencia de metadados.
-- Tratamento de erro: IDs inexistentes, JSON invalido, entradas vazias e parametros fora do intervalo.
-- Autenticacao e autorizacao: endpoint protegido, token invalido, ausencia de token e recomendacoes.
-- Seguranca de integracao: validacao HMAC do webhook.
-- Performance operacional: smoke/load test com thresholds para latencia e taxa de erro.
+| Gate | Comando | Resultado | Interpretacao |
+|---|---|---:|---|
+| Lint | `make lint` | passou | Codigo de testes e scripts consistente |
+| Quality gate | `make test` | `45 passed` | Comportamentos aceitos estao verdes |
+| Release gate | `make release-gate` | `8 failed` | Bugs criticos/seguranca bloqueiam release |
+| Diagnostico | `make test-known-bugs-diagnostic` | `13 failed` | Bugs conhecidos seguem reproduziveis |
+| Performance | `make perf` | passou | Sem falhas HTTP e sem saturacao no smoke |
 
-O conjunto atual separa dois usos: o quality gate executa `pytest -m "not known_bug"` e deve passar; os testes marcados como `known_bug` documentam defeitos encontrados e devem falhar enquanto os bugs descritos em `docs/BUGS.md` nao forem corrigidos.
-
-## Estrutura
+Resumo consolidado gerado por `make reports`:
 
 ```text
-api/                         API fornecida no desafio
-tests/                       Testes funcionais e de contrato com pytest
-tests/client.py              Client HTTP de dominio usado pelos testes
-tests/data.py                Dados conhecidos e termos de busca centralizados
-performance/catalog-api.k6.js Teste de carga/smoke com k6
-performance/spike.k6.js       Teste manual de pico/stress
-docs/BUGS.md                 Bugs encontrados, impacto e reproducao
-docs/EXECUTION.md            Resultado de uma execucao local real
-docs/PERFORMANCE_EVIDENCE.md Evidencia resumida dos testes de performance
-docs/RISK_TRACEABILITY.md     Risco, requisito, teste e evidencia
-docs/RELEASE_WAIVERS.md       Politica de waiver para bugs bloqueantes
-docs/UX_QUALITY.md           Avaliacao da API pela lente de usabilidade
-docs/QA_EVALUATION.md        Avaliacao da estrategia de QA e criterios de suficiencia
-.github/workflows/quality.yml CI de qualidade
+Quality gate: 45 passed, 0 failed
+Release-blocking known bugs: 8 failed
+Non-blocking known bug diagnostics: 13 failed
+Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 ```
 
-## Estrategia de cobertura
+## Cobertura
 
-Os testes foram separados por dominio para facilitar manutencao:
-
-- `test_health.py`: disponibilidade e metadados operacionais.
-- `test_services.py`: listagem, paginacao e detalhe de servico.
-- `test_search.py`: busca por texto e validacoes de entrada.
-- `test_auth_and_recommendations.py`: autorizacao, favoritos e recomendacoes.
-- `test_webhook.py`: contrato do webhook e assinatura HMAC.
-- `test_data_management.py`: isolamento de snapshot e verificacao de ausencia de mutacao compartilhada.
-
-Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. As chamadas HTTP passam por `tests/client.py`, que centraliza URL base, timeout, paths e headers, deixando os testes focados na intencao do comportamento. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
-
-Uma avaliacao objetiva da suficiencia da cobertura, realismo dos testes de performance, reprodutibilidade dos bugs, comportamento do CI e justificativa das ferramentas esta em `docs/QA_EVALUATION.md`.
-
-## Test data management
-
-A API do desafio nao possui endpoints de criacao/remocao de servicos, entao a estrategia implementada evita depender de estado mutavel compartilhado:
-
-- cada teste recebe um `CatalogApiClient` proprio, com sessao HTTP fechada ao final da fixture;
-- `catalog_snapshot` busca um snapshot fresco do catalogo por teste e retorna uma copia independente;
-- `tests/data.py` centraliza IDs, titulos, categorias e termos usados nos cenarios;
-- seletores como `catalog.by_title(...)`, `catalog.by_category(...)` e `catalog.unknown_id()` centralizam dados conhecidos;
-- testes de favoritos e webhook verificam que essas operacoes nao alteram o catalogo base;
-- testes de isolamento garantem que mutacoes locais no snapshot de um teste nao vazam para outro.
-
-Essa abordagem torna a suite adequada para a API estatica do desafio e deixa claro onde entrariam setup/teardown ou factories caso a API tivesse persistencia.
-
-## Matriz de cobertura
+### Matriz por endpoint
 
 | Endpoint | Happy path | Erros e bordas | Auth/seguranca | Contrato | Performance |
 |---|---:|---:|---:|---:|---:|
@@ -135,11 +121,100 @@ Essa abordagem torna a suite adequada para a API estatica do desafio e deixa cla
 | `POST /api/v1/services/:id/favorite` | Sim | Sim | Sim | Sim | Nao |
 | `POST /api/v1/webhooks/catalog` | Sim | Sim | Sim | Sim | Sim |
 
-## Qualidade orientada a experiencia
+### Lentes de qualidade
 
-Alem de validar status code e contrato, esta entrega avalia se a API sustenta uma experiencia publica encontravel, previsivel e inclusiva. A analise completa esta em `docs/UX_QUALITY.md`.
+| Lente | Testes mapeados | O que cobre |
+|---|---:|---|
+| API contract and schema | 40 | OpenAPI, JSON Schema, consistencia de payloads |
+| Negative and edge cases | 25 | Entradas invalidas, bordas, IDs adversariais |
+| Security and authorization | 6 | Token, esquemas invalidos e HMAC |
+| Test data management | 4 | Snapshot isolado e ausencia de estado mutavel compartilhado |
+| UX and API usability | 6 | Encontrabilidade, linguagem de usuario e relevancia |
+| Resilience | 5 | Burst curto, payload grande, conexao e metodos invalidos |
 
-Foram adicionados testes para:
+### Prioridades de teste
+
+| Prioridade | Por que importa |
+|---|---|
+| Contrato | Consumidores precisam de respostas previsiveis e colecoes consistentes. |
+| Tratamento de erro | Erros esperados nao podem virar `500` nem stack trace operacional. |
+| Autorizacao | Endpoints protegidos devem rejeitar ausencia, token invalido e esquema malformado. |
+| Webhook HMAC | Integracoes externas nao podem alterar catalogo sem assinatura valida. |
+| UX da API | Busca publica precisa tolerar necessidade real de usuario, nao so nome oficial. |
+| Performance | Um catalogo municipal deve responder rapido sob acesso concorrente. |
+
+## Bugs Encontrados
+
+A lista completa esta em [docs/BUGS.md](docs/BUGS.md). Cada bug tem impacto, reproducao, resultado atual, resultado esperado e teste automatizado.
+
+| ID | Severidade | Area | Resumo |
+|---|---|---|---|
+| BUG-001 | Alta | Erro/contrato | Servico inexistente retorna `500` em vez de `404`. |
+| BUG-002 | Media | Validacao | Busca vazia ou sem `query` retorna sucesso. |
+| BUG-003 | Media | Paginacao | `total_pages` usa arredondamento para baixo. |
+| BUG-004 | Critica | Seguranca | Webhook aceita assinatura ausente, invalida ou com secret errado. |
+| BUG-005 | Alta | Autorizacao | Recomendacoes aceitam ausencia/token invalido. |
+| BUG-006 | Baixa | Contrato/UX | Busca sem resultado retorna `results: null` em vez de `[]`. |
+| BUG-007 | Media | UX | Busca nao normaliza acentos, espacos e tags comuns. |
+| BUG-008 | Media | UX | Busca nao entende linguagem de necessidade nem prioriza relevancia. |
+
+## Diferenciais do Desafio
+
+| Diferencial | Implementacao |
+|---|---|
+| Contract testing | `openapi.yaml`, `jsonschema` e validacoes em `tests/test_contract.py` |
+| Acessibilidade | Avaliacao pela lente de API usability em [docs/UX_QUALITY.md](docs/UX_QUALITY.md) |
+| Resiliencia | `tests/test_resilience.py`, payload grande, burst concorrente e conexao fechada |
+| Relatorio no CI | `scripts/quality_summary.py` gera `quality-summary.md` e Step Summary |
+| Test data management | Fixtures isoladas, `tests/data.py`, snapshots frescos e client por teste |
+| Performance | k6 com thresholds, smoke no CI e spike manual |
+| Qualidade do codigo de teste | `ruff`, client HTTP de dominio e helpers de webhook |
+
+## Arquitetura dos Testes
+
+```text
+api/                          API fornecida no desafio
+tests/                        Testes funcionais, contrato, UX e resiliencia
+tests/client.py               Client HTTP de dominio
+tests/data.py                 IDs, categorias, titulos e termos centralizados
+tests/helpers.py              Assinatura HMAC e payloads auxiliares
+performance/catalog-api.k6.js Smoke de performance
+performance/spike.k6.js       Spike/stress manual
+scripts/quality_summary.py    Relatorio consolidado
+docs/                         Bugs, execucao, risco, performance e avaliacao QA
+.github/workflows/quality.yml Pipeline de qualidade
+```
+
+### Organizacao por arquivo
+
+| Arquivo | Foco |
+|---|---|
+| `test_health.py` | Saude da API e metadados operacionais |
+| `test_services.py` | Listagem, paginacao e detalhe |
+| `test_search.py` | Busca por texto e validacoes de entrada |
+| `test_auth_and_recommendations.py` | Favoritos, autorizacao e recomendacoes |
+| `test_webhook.py` | Contrato do webhook e assinatura HMAC |
+| `test_contract.py` | OpenAPI, JSON Schema e consistencia do catalogo |
+| `test_data_management.py` | Isolamento de dados entre testes |
+| `test_ux_quality.py` | Encontrabilidade e usabilidade da API |
+| `test_resilience.py` | Carga curta, payloads e entradas extremas |
+
+### Test data management
+
+A API do desafio nao possui endpoints de criacao/remocao de servicos, entao a suite evita depender de estado mutavel compartilhado:
+
+- cada teste recebe um `CatalogApiClient` proprio, com sessao HTTP fechada ao final;
+- `catalog_snapshot` busca um snapshot fresco do catalogo por teste;
+- `tests/data.py` centraliza IDs, titulos, categorias e termos;
+- seletores como `catalog.by_title(...)`, `catalog.by_category(...)` e `catalog.unknown_id()` evitam strings espalhadas;
+- testes de favoritos e webhook verificam que essas operacoes nao alteram o catalogo base;
+- mutacoes locais no snapshot de um teste nao vazam para outro.
+
+## Qualidade Orientada a Experiencia
+
+A API foi avaliada como base de uma experiencia publica: encontravel, previsivel e inclusiva. A analise completa esta em [docs/UX_QUALITY.md](docs/UX_QUALITY.md).
+
+Foram testados:
 
 - jornada real de busca, detalhe e recomendacao;
 - clareza minima do conteudo dos servicos;
@@ -148,55 +223,59 @@ Foram adicionados testes para:
 - ordenacao por relevancia;
 - normalizacao de termos comuns digitados por usuarios.
 
-## Politica de release gate
+## Performance
 
-Os bugs conhecidos sao separados por risco:
+Os thresholds atuais sao uma primeira barra de producao para uma API municipal de consulta:
 
-- `known_bug_high` e `security`: bloqueiam release e rodam em `make release-gate`.
-- demais `known_bug`: rodam como diagnostico em `make test-known-bugs-diagnostic`.
-
-Isso significa que bugs criticos continuam visiveis como bloqueadores de release, mesmo quando o workflow fica verde para indicar que a automacao executou corretamente. A politica e os waivers estao documentados em `docs/RISK_TRACEABILITY.md` e `docs/RELEASE_WAIVERS.md`.
-
-## Resultados locais
-
-Uma execucao local real esta registrada em `docs/EXECUTION.md`. Os resultados abaixo foram resumidos em texto para evitar screenshots com usuario, nome da maquina, caminhos locais ou stack traces extensos.
-
-Com a API rodando localmente em `http://localhost:8080`:
-
-| Comando | Resultado esperado | Interpretacao |
+| Metrica | Threshold | Motivo |
 |---|---:|---|
-| `make lint` | passou | Codigo de testes e scripts formatado/validado com `ruff` |
-| `make test` | 45 passed | Quality gate funcional verde |
-| `make release-gate` | 8 failed | Bugs criticos/seguranca bloqueando release |
-| `make test-known-bugs-diagnostic` | 13 failed | Bugs medios/baixos e riscos de UX documentados |
-| `make perf` | passou | Smoke de performance com `0.00%` de falhas HTTP |
+| `http_req_failed` | `< 1%` | Falhas devem ser raras em servico publico de consulta. |
+| `checks` | `> 99%` | Resposta precisa ser correta, nao so rapida. |
+| `dropped_iterations` | `0` | Indica que a carga configurada foi atendida. |
+| `p95` global | `< 300ms` | Mantem listagem/busca perceptivelmente rapidas. |
+| `p99` global | `< 750ms` | Controla cauda de latencia no smoke. |
 
-Resumo do relatorio consolidado:
+O smoke de CI roda por 45 segundos cobrindo health, listagem, detalhe, busca, recomendacoes e webhook. A estimativa usada: se o catalogo tiver 20 mil acessos/dia e 20% ocorrerem em uma janela de pico de 2 horas, isso representa cerca de 33 requisicoes/minuto. Com usuarios navegando por alguns segundos entre telas, 50 VUs e uma carga conservadora para detectar regressao sem deixar o CI lento.
+
+Limite da evidencia: a API roda em memoria, sem banco, rede real, cache externo ou infraestrutura de producao. Por isso, os numeros locais servem como smoke/regressao, nao como prova final de capacidade.
+
+Evidencia detalhada: [docs/PERFORMANCE_EVIDENCE.md](docs/PERFORMANCE_EVIDENCE.md).
+
+## CI e Relatorios
+
+O workflow `.github/workflows/quality.yml`:
+
+| Etapa | Objetivo |
+|---|---|
+| Start API | Sobe a API com Docker Compose |
+| Install | Instala dependencias Python |
+| Lint | Executa `ruff check` e `ruff format --check` |
+| Quality gate | Roda `pytest -m "not known_bug"` |
+| Release evidence | Coleta bugs criticos/seguranca conhecidos |
+| Diagnostic evidence | Coleta bugs medios/baixos e UX |
+| Summary | Gera resumo consolidado no GitHub Step Summary |
+| Artifacts | Publica HTML, JUnit XML e `quality-summary.md` |
+| k6 smoke | Executa performance com imagem Docker oficial do k6 |
+
+### Exemplos de relatorios gerados localmente
+
+Os exemplos abaixo foram gerados com `make reports` e resumidos em texto para evitar expor usuario da maquina, caminhos locais ou stack traces completos.
+
+| Relatorio | Resultado | Leitura |
+|---|---|---|
+| `reports/quality-summary.md` | `66` testes nos gates | Visao geral para CI e decisao de release |
+| `reports/pytest-report.html` | `45 passed, 21 deselected` | Quality gate funcional verde |
+| `reports/release-gate-report.html` | `8 failed, 58 deselected` | Bugs criticos/seguranca reproduziveis |
+| `reports/known-bugs-report.html` | `13 failed, 53 deselected` | Bugs diagnosticos e UX reproduziveis |
+
+Exemplo do `quality-summary.md`:
 
 ```text
-Quality gate: 45 passed, 0 failed
-Release-blocking known bugs: 8 failed
-Non-blocking known bug diagnostics: 13 failed
-Performance smoke: 0.00% HTTP failures, dropped_iterations=0
-```
+Quality gate funcional: 45/45 passed
+Release blockers conhecidos: 8
+Bugs diagnosticos conhecidos: 13
 
-## Exemplos de relatorios gerados
-
-Os exemplos abaixo foram gerados rodando `make reports` localmente com a API em `http://localhost:8080`. Eles foram resumidos em texto para registrar a evidencia sem expor usuario da maquina, caminhos locais ou stack traces completos.
-
-`reports/quality-summary.md`:
-
-```text
-Quality Summary
-
-Geral
-- Automacao do CI: OK
-- Decisao de release: Blocked
-- Quality gate funcional: 45/45 passed
-- Release blockers conhecidos: 8
-- Bugs diagnosticos conhecidos: 13
-
-Quality Lenses
+Quality Lenses:
 - API contract and schema: 40 tests mapped
 - Negative and edge cases: 25 tests mapped
 - Security and authorization: 6 tests mapped
@@ -205,84 +284,22 @@ Quality Lenses
 - Resilience: 5 tests mapped
 ```
 
-`reports/pytest-report.html`:
+## Documentacao Complementar
 
-```text
-Suite funcional sem bugs conhecidos
-Resultado: 45 passed, 21 deselected
-Interpretacao: o quality gate principal esta verde para os comportamentos aceitos.
-```
+| Documento | Conteudo |
+|---|---|
+| [docs/BUGS.md](docs/BUGS.md) | Bugs, impacto e reproducao |
+| [docs/EXECUTION.md](docs/EXECUTION.md) | Resultado de execucao local real |
+| [docs/PERFORMANCE_EVIDENCE.md](docs/PERFORMANCE_EVIDENCE.md) | Evidencia e justificativa de performance |
+| [docs/RISK_TRACEABILITY.md](docs/RISK_TRACEABILITY.md) | Risco, requisito, teste e evidencia |
+| [docs/RELEASE_WAIVERS.md](docs/RELEASE_WAIVERS.md) | Politica de waiver para release |
+| [docs/UX_QUALITY.md](docs/UX_QUALITY.md) | Analise de usabilidade da API |
+| [docs/QA_EVALUATION.md](docs/QA_EVALUATION.md) | Resposta aos criterios do desafio |
 
-`reports/release-gate-report.html`:
-
-```text
-Bugs bloqueantes de release
-Resultado: 8 failed, 58 deselected
-Exemplos:
-- recommendations sem token retorna 200 em vez de 401
-- recommendations aceita tokens invalidos em vez de retornar 401
-- servico inexistente retorna 500 em vez de 404
-- variacoes adversariais de id inexistente tambem retornam 500
-- webhook aceita assinatura ausente, invalida ou assinada com segredo incorreto
-```
-
-`reports/known-bugs-report.html`:
-
-```text
-Bugs diagnosticos nao bloqueantes
-Resultado: 13 failed, 53 deselected
-Exemplos:
-- busca sem campo query retorna 200 em vez de 400
-- busca sem resultado retorna results=null em vez de []
-- busca nao normaliza acentos, espacos e termos comuns
-- total_pages usa divisao truncada em vez de arredondar para cima
-- busca por linguagem de necessidade nao encontra alguns servicos esperados
-```
-
-## Performance
-
-Os thresholds atuais foram definidos como uma primeira barra de producao para um catalogo municipal de alta consulta e baixa complexidade computacional:
-
-- `http_req_failed < 1%`
-- `p95 < 300ms`
-- `p99 < 750ms`
-- `checks > 99%`
-
-O cenario de CI sobe ate 50 usuarios virtuais por ser um smoke test. Uma forma de justificar esse numero: se o catalogo tiver 20 mil acessos/dia e 20% deles ocorrerem em uma janela de pico de 2 horas, isso representa cerca de 33 requisicoes/minuto. Com usuarios navegando por alguns segundos entre busca, detalhe e recomendacao, 50 VUs e uma carga conservadora para detectar regressao sem deixar o CI lento.
-
-Os tempos observados localmente em microssegundos refletem uma API Go em memoria, sem banco, rede real, cache externo, observabilidade ou infraestrutura de producao. Por isso, os testes de performance aqui servem como smoke/regressao e nao como prova de capacidade final de producao.
-
-Uma evidencia resumida de execucao local esta em `docs/PERFORMANCE_EVIDENCE.md`.
-
-Tambem existe um cenario manual de spike/stress:
-
-```bash
-make perf-spike
-```
-
-Ele sobe ate 150 VUs e usa thresholds menos estritos para observar comportamento sob aumento subido de demanda.
-
-## CI
-
-O workflow `.github/workflows/quality.yml`:
-
-1. Sobe a API com Docker Compose.
-2. Instala dependencias Python.
-3. Executa lint/format dos testes com `ruff`.
-4. Executa o quality gate funcional, excluindo bugs conhecidos.
-5. Coleta evidencia do release gate para bugs criticos/seguranca, sem mascarar o resultado no resumo.
-6. Executa os testes de bugs conhecidos nao criticos como diagnostico.
-7. Gera um resumo consolidado no GitHub Step Summary, incluindo gates, lentes de qualidade, arquitetura de testes e bugs conhecidos em aberto.
-8. Publica os relatorios como artefato.
-9. Executa o smoke de performance com a imagem Docker oficial do k6.
-10. Derruba a API ao final.
-
-Como a API atual tem defeitos de severidade media a critica, `make release-gate` deve falhar localmente ate que eles sejam corrigidos ou formalmente aceitos. No GitHub Actions, esses bugs conhecidos sao coletados como evidencia e destacados no `quality-summary.md`, enquanto o workflow em si falha apenas se o quality gate funcional quebrar.
-
-## O que faria com mais tempo
+## O Que Faria Com Mais Tempo
 
 - Expandiria contract testing com Schemathesis gerando casos automaticamente a partir do `openapi.yaml`.
 - Adicionaria property-based testing com Hypothesis para busca, paginacao e payloads.
-- Criaria cenarios de resiliencia com falhas de rede/controladas por proxy, como timeout e conexao recusada.
+- Criaria cenarios de resiliencia com falhas de rede controladas por proxy, como timeout e conexao recusada.
 - Separaria uma suite de endurance para execucao agendada mais longa fora do CI de pull request.
-- Evoluiria test data management para uma API com estado persistente, evitando dependencia de dados globais fixos.
+- Evoluiria test data management para uma API com estado persistente, usando setup/teardown ou factories.
