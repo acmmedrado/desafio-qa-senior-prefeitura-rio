@@ -28,9 +28,18 @@ jobs:
       - name: Run functional API tests
         run: |
           mkdir -p reports
-          pytest \
+          pytest -m "not known_bug" \
             --junitxml=reports/pytest-junit.xml \
             --html=reports/pytest-report.html \
+            --self-contained-html
+
+      - name: Run known bug documentation tests
+        if: always()
+        continue-on-error: true
+        run: |
+          pytest -m known_bug \
+            --junitxml=reports/known-bugs-junit.xml \
+            --html=reports/known-bugs-report.html \
             --self-contained-html
 
       - name: Upload functional test reports

@@ -20,6 +20,18 @@ pip install -r requirements.txt
 pytest
 ```
 
+Para rodar apenas o quality gate bloqueante, excluindo bugs ja documentados:
+
+```bash
+pytest -m "not known_bug"
+```
+
+Para rodar somente os testes que documentam bugs conhecidos:
+
+```bash
+pytest -m known_bug
+```
+
 Para gerar relatorios locais:
 
 ```bash
@@ -49,7 +61,7 @@ Priorizei riscos que impediriam colocar a API em producao com confianca:
 - Seguranca de integracao: validacao HMAC do webhook.
 - Performance operacional: smoke/load test com thresholds para latencia e taxa de erro.
 
-O conjunto atual tem testes que passam para comportamentos corretos e testes que falham para defeitos encontrados. A falha da suite completa e intencional enquanto os bugs documentados em `docs/BUGS.md` nao forem corrigidos.
+O conjunto atual separa dois usos: o quality gate executa `pytest -m "not known_bug"` e deve passar; os testes marcados como `known_bug` documentam defeitos encontrados e devem falhar enquanto os bugs descritos em `docs/BUGS.md` nao forem corrigidos.
 
 ## Estrutura
 
@@ -90,12 +102,13 @@ O workflow `.github/workflows/quality.yml`:
 
 1. Sobe a API com Docker Compose.
 2. Instala dependencias Python.
-3. Executa os testes funcionais com JUnit e HTML report.
-4. Publica os relatorios como artefato.
-5. Executa o smoke de performance com k6.
-6. Derruba a API ao final.
+3. Executa o quality gate funcional, excluindo bugs conhecidos.
+4. Executa os testes de bugs conhecidos como diagnostico nao bloqueante.
+5. Publica os relatorios como artefato.
+6. Executa o smoke de performance com k6.
+7. Derruba a API ao final.
 
-Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos.
+Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos. O gate principal, porem, fica verde para os comportamentos que ja estao corretos.
 
 ## O que faria com mais tempo
 

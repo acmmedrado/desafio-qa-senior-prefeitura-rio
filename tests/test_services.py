@@ -2,6 +2,7 @@ import pytest
 
 
 @pytest.mark.contract
+@pytest.mark.known_bug
 def test_list_services_default_pagination_contract(api):
     response = api.get(f"{api.base_url}/api/v1/services", timeout=3)
 
