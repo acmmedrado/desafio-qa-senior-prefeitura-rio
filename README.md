@@ -173,33 +173,65 @@ A lista completa esta em [docs/BUGS.md](docs/BUGS.md). Cada bug tem impacto, rep
 
 ## Arquitetura dos Testes
 
+### Fluxo da automacao
+
 ```text
-api/                          API fornecida no desafio
-tests/                        Testes funcionais, contrato, UX e resiliencia
-tests/client.py               Client HTTP de dominio
-tests/data.py                 IDs, categorias, titulos e termos centralizados
-tests/helpers.py              Assinatura HMAC e payloads auxiliares
-performance/catalog-api.k6.js Smoke de performance
-performance/spike.k6.js       Spike/stress manual
-scripts/quality_summary.py    Relatorio consolidado
-docs/                         Bugs, execucao, risco, performance e avaliacao QA
-.github/workflows/quality.yml Pipeline de qualidade
+GitHub Actions / make
+        |
+        v
+pytest markers
+quality gate | release gate | diagnostic bugs
+        |
+        v
+CatalogApiClient
+base_url | timeout | paths | headers
+        |
+        v
+Catalogo de Servicos Publicos API
+        |
+        v
+JUnit XML + HTML + quality-summary.md
 ```
 
-### Organizacao por arquivo
+### Camadas
 
-| Arquivo | Foco |
+| Camada | Arquivos | Responsabilidade |
+|---|---|---|
+| Orquestracao | `Makefile`, `.github/workflows/quality.yml` | Rodar lint, gates, relatorios e performance localmente ou no CI. |
+| Test runners | `pytest.ini`, markers `contract`, `negative`, `security`, `known_bug` | Separar comportamentos aceitos, bugs bloqueantes e diagnosticos. |
+| Testes de API | `tests/test_*.py` | Validar contrato, erro, auth, busca, webhook, UX, resiliencia e seguranca. |
+| Client de dominio | `tests/client.py` | Centralizar URL base, timeout, paths e sessao HTTP. |
+| Dados de teste | `tests/data.py`, fixtures em `conftest.py` | Evitar IDs e termos espalhados, criar snapshots isolados por teste. |
+| Helpers | `tests/helpers.py` | Montar payload assinado e assinatura HMAC de forma reutilizavel. |
+| Contrato | `openapi.yaml`, `tests/test_contract.py` | Formalizar comportamento observado e validar respostas com JSON Schema. |
+| Performance | `performance/catalog-api.k6.js`, `performance/spike.k6.js` | Medir regressao de latencia, erro, saturacao e pico manual. |
+| Evidencia | `reports/`, `scripts/quality_summary.py`, `docs/` | Gerar artefatos legiveis, bugs reproduziveis e rastreabilidade. |
+
+### Mapa da suite
+
+| Suite | Lente principal | Exemplos de cobertura |
+|---|---|---|
+| `test_health.py` | Operacional | Health check e metadados basicos. |
+| `test_services.py` | Catalogo | Listagem, paginacao, detalhe e IDs inexistentes. |
+| `test_search.py` | Busca | Termos validos, query vazia, JSON invalido e content-type. |
+| `test_auth_and_recommendations.py` | Autorizacao | Favoritos, token invalido, recomendacoes protegidas. |
+| `test_webhook.py` | Integracao segura | HMAC ausente, invalido, secret errado e payload divergente. |
+| `test_security.py` | Abuso defensivo | Injection, path traversal, token gigante e vazamento de informacao. |
+| `test_contract.py` | Contrato formal | OpenAPI, JSON Schema, IDs, tags, view count e consistencia. |
+| `test_data_management.py` | Estado de teste | Snapshot isolado e ausencia de mutacao compartilhada. |
+| `test_ux_quality.py` | Usabilidade da API | Encontrabilidade, linguagem de necessidade e relevancia. |
+| `test_resilience.py` | Robustez | Burst concorrente, payload grande, metodo invalido e conexao fechada. |
+
+### Decisoes de clean code
+
+| Decisao | Ganho |
 |---|---|
-| `test_health.py` | Saude da API e metadados operacionais |
-| `test_services.py` | Listagem, paginacao e detalhe |
-| `test_search.py` | Busca por texto e validacoes de entrada |
-| `test_auth_and_recommendations.py` | Favoritos, autorizacao e recomendacoes |
-| `test_webhook.py` | Contrato do webhook e assinatura HMAC |
-| `test_security.py` | Injection, auth abusiva, HMAC malformado e vazamento de erro |
-| `test_contract.py` | OpenAPI, JSON Schema e consistencia do catalogo |
-| `test_data_management.py` | Isolamento de dados entre testes |
-| `test_ux_quality.py` | Encontrabilidade e usabilidade da API |
-| `test_resilience.py` | Carga curta, payloads e entradas extremas |
+| Client HTTP explicito | Testes leem intencao de negocio, nao montagem repetida de URL. |
+| Dados centralizados | Mudanca no seed da API exige ajuste em um lugar so. |
+| Fixtures com teardown | Cada teste fecha sua sessao HTTP e reduz vazamento entre cenarios. |
+| Markers estritos | O CI separa qualidade, bug conhecido, seguranca e diagnostico sem ambiguidade. |
+| Helpers de HMAC | Assinatura de webhook fica correta e reutilizavel. |
+| Relatorio consolidado | Quem avalia entende status geral sem abrir cada HTML individualmente. |
 
 ### Test data management
 
