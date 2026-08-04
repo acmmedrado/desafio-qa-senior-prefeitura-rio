@@ -1,10 +1,12 @@
 import pytest
 
+from tests.data import FAVORITE_SERVICE_TITLE, VACCINATION_SERVICE_ID, VACCINATION_SERVICE_TITLE
+
 
 @pytest.mark.negative
 def test_favorite_requires_authorization(api, catalog):
-    service = catalog.by_title("Cartão Rio")
-    response = api.post(f"{api.base_url}/api/v1/services/{service['id']}/favorite", timeout=3)
+    service = catalog.by_title(FAVORITE_SERVICE_TITLE)
+    response = api.favorite(service["id"])
 
     assert response.status_code == 401
     assert response.json()["error"] == "missing authorization header"
@@ -12,11 +14,10 @@ def test_favorite_requires_authorization(api, catalog):
 
 @pytest.mark.negative
 def test_favorite_rejects_invalid_token(api, catalog):
-    service = catalog.by_title("Cartão Rio")
-    response = api.post(
-        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
+    service = catalog.by_title(FAVORITE_SERVICE_TITLE)
+    response = api.favorite(
+        service["id"],
         headers={"Authorization": "Bearer wrong-token"},
-        timeout=3,
     )
 
     assert response.status_code == 401
@@ -25,11 +26,10 @@ def test_favorite_rejects_invalid_token(api, catalog):
 
 @pytest.mark.negative
 def test_favorite_rejects_malformed_authorization_scheme(api, catalog):
-    service = catalog.by_title("Cartão Rio")
-    response = api.post(
-        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
+    service = catalog.by_title(FAVORITE_SERVICE_TITLE)
+    response = api.favorite(
+        service["id"],
         headers={"Authorization": "Token qa-challenge-token"},
-        timeout=3,
     )
 
     assert response.status_code == 401
@@ -38,11 +38,10 @@ def test_favorite_rejects_malformed_authorization_scheme(api, catalog):
 
 @pytest.mark.contract
 def test_favorite_accepts_valid_token(api, auth_headers, catalog):
-    service = catalog.by_title("Cartão Rio")
-    response = api.post(
-        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
+    service = catalog.by_title(FAVORITE_SERVICE_TITLE)
+    response = api.favorite(
+        service["id"],
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 200
@@ -54,10 +53,9 @@ def test_favorite_accepts_valid_token(api, auth_headers, catalog):
 
 @pytest.mark.negative
 def test_favorite_unknown_service_returns_404(api, auth_headers, catalog):
-    response = api.post(
-        f"{api.base_url}/api/v1/services/{catalog.unknown_id()}/favorite",
+    response = api.favorite(
+        catalog.unknown_id(),
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 404
@@ -69,7 +67,7 @@ def test_favorite_unknown_service_returns_404(api, auth_headers, catalog):
 @pytest.mark.known_bug_high
 @pytest.mark.security
 def test_recommendations_requires_authorization(api):
-    response = api.get(f"{api.base_url}/api/v1/services/s002/recommendations", timeout=3)
+    response = api.recommendations(VACCINATION_SERVICE_ID)
 
     assert response.status_code == 401
     assert response.json()["error"] == "missing authorization header"
@@ -77,11 +75,10 @@ def test_recommendations_requires_authorization(api):
 
 @pytest.mark.contract
 def test_recommendations_returns_same_category_services_when_authorized(api, auth_headers, catalog):
-    service = catalog.by_title("Vacinação Gratuita")
-    response = api.get(
-        f"{api.base_url}/api/v1/services/{service['id']}/recommendations",
+    service = catalog.by_title(VACCINATION_SERVICE_TITLE)
+    response = api.recommendations(
+        service["id"],
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 200
@@ -93,10 +90,9 @@ def test_recommendations_returns_same_category_services_when_authorized(api, aut
 
 @pytest.mark.negative
 def test_recommendations_unknown_service_returns_404_when_authorized(api, auth_headers, catalog):
-    response = api.get(
-        f"{api.base_url}/api/v1/services/{catalog.unknown_id()}/recommendations",
+    response = api.recommendations(
+        catalog.unknown_id(),
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 404

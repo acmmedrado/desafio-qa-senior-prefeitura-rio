@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 
 def test_health_returns_operational_metadata(api):
-    response = api.get(f"{api.base_url}/health", timeout=3)
+    response = api.health()
 
     assert response.status_code == 200
     body = response.json()

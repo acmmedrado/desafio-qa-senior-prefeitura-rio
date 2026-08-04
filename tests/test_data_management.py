@@ -1,8 +1,7 @@
-import json
-
 import pytest
 
-from tests.helpers import webhook_signature
+from tests.data import FAVORITE_SERVICE_TITLE, SERVICE_UPDATED_EVENT, VACCINATION_SERVICE_ID
+from tests.helpers import build_signed_webhook_request
 
 
 def service_fingerprint(services):
@@ -30,15 +29,14 @@ def test_catalog_snapshot_is_not_shared_between_tests(catalog_snapshot):
 def test_favorite_does_not_mutate_shared_catalog_state(
     api, auth_headers, catalog, catalog_snapshot
 ):
-    service = catalog.by_title("Cartão Rio")
+    service = catalog.by_title(FAVORITE_SERVICE_TITLE)
     before = service_fingerprint(catalog_snapshot)
 
-    response = api.post(
-        f"{api.base_url}/api/v1/services/{service['id']}/favorite",
+    response = api.favorite(
+        service["id"],
         headers=auth_headers,
-        timeout=3,
     )
-    after_response = api.get(f"{api.base_url}/api/v1/services?per_page=100", timeout=3)
+    after_response = api.list_services(per_page=100)
 
     assert response.status_code == 200
     assert service_fingerprint(after_response.json()["data"]) == before
@@ -48,18 +46,15 @@ def test_favorite_does_not_mutate_shared_catalog_state(
 @pytest.mark.data_management
 def test_webhook_does_not_mutate_shared_catalog_state(api, catalog_snapshot):
     before = service_fingerprint(catalog_snapshot)
-    body = json.dumps({"event": "service.updated", "id": "s002"}).encode("utf-8")
-
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Signature-256": webhook_signature(body),
-        },
-        timeout=3,
+    body, headers = build_signed_webhook_request(
+        {"event": SERVICE_UPDATED_EVENT, "id": VACCINATION_SERVICE_ID}
     )
-    after_response = api.get(f"{api.base_url}/api/v1/services?per_page=100", timeout=3)
+
+    response = api.webhook(
+        data=body,
+        headers=headers,
+    )
+    after_response = api.list_services(per_page=100)
 
     assert response.status_code == 200
     assert service_fingerprint(after_response.json()["data"]) == before

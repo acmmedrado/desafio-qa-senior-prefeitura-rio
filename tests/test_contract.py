@@ -4,6 +4,13 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
+from tests.data import (
+    FAVORITE_SERVICE_ID,
+    HEALTH_QUERY,
+    NO_MATCH_QUERY,
+    VACCINATION_SERVICE_ID,
+)
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
 
@@ -47,7 +54,7 @@ def validate_response(spec, path, method, status_code, payload):
 
 @pytest.mark.contract
 def test_health_matches_openapi_contract(api, openapi_spec):
-    response = api.get(f"{api.base_url}/health", timeout=3)
+    response = api.health()
 
     assert response.status_code == 200
     validate_response(openapi_spec, "/health", "get", 200, response.json())
@@ -55,7 +62,7 @@ def test_health_matches_openapi_contract(api, openapi_spec):
 
 @pytest.mark.contract
 def test_services_list_matches_openapi_contract(api, openapi_spec):
-    response = api.get(f"{api.base_url}/api/v1/services?page=2&per_page=10", timeout=3)
+    response = api.list_services(page=2, per_page=10)
 
     assert response.status_code == 200
     validate_response(openapi_spec, "/api/v1/services", "get", 200, response.json())
@@ -63,7 +70,7 @@ def test_services_list_matches_openapi_contract(api, openapi_spec):
 
 @pytest.mark.contract
 def test_service_detail_matches_openapi_contract(api, openapi_spec):
-    response = api.get(f"{api.base_url}/api/v1/services/s002", timeout=3)
+    response = api.get_service(VACCINATION_SERVICE_ID)
 
     assert response.status_code == 200
     validate_response(openapi_spec, "/api/v1/services/{id}", "get", 200, response.json())
@@ -71,11 +78,7 @@ def test_service_detail_matches_openapi_contract(api, openapi_spec):
 
 @pytest.mark.contract
 def test_search_response_matches_openapi_contract(api, openapi_spec):
-    response = api.post(
-        f"{api.base_url}/api/v1/services/search",
-        json={"query": "saude"},
-        timeout=3,
-    )
+    response = api.search(HEALTH_QUERY)
 
     assert response.status_code == 200
     validate_response(openapi_spec, "/api/v1/services/search", "post", 200, response.json())
@@ -83,10 +86,9 @@ def test_search_response_matches_openapi_contract(api, openapi_spec):
 
 @pytest.mark.contract
 def test_favorite_response_matches_openapi_contract(api, auth_headers, openapi_spec):
-    response = api.post(
-        f"{api.base_url}/api/v1/services/s001/favorite",
+    response = api.favorite(
+        FAVORITE_SERVICE_ID,
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 200
@@ -95,10 +97,9 @@ def test_favorite_response_matches_openapi_contract(api, auth_headers, openapi_s
 
 @pytest.mark.contract
 def test_recommendations_response_matches_openapi_contract(api, auth_headers, openapi_spec):
-    response = api.get(
-        f"{api.base_url}/api/v1/services/s002/recommendations",
+    response = api.recommendations(
+        VACCINATION_SERVICE_ID,
         headers=auth_headers,
-        timeout=3,
     )
 
     assert response.status_code == 200
@@ -114,11 +115,7 @@ def test_recommendations_response_matches_openapi_contract(api, auth_headers, op
 @pytest.mark.contract
 @pytest.mark.known_bug
 def test_empty_search_response_matches_openapi_contract(api, openapi_spec):
-    response = api.post(
-        f"{api.base_url}/api/v1/services/search",
-        json={"query": "termo-sem-correspondencia"},
-        timeout=3,
-    )
+    response = api.search(NO_MATCH_QUERY)
 
     assert response.status_code == 200
     validate_response(openapi_spec, "/api/v1/services/search", "post", 200, response.json())

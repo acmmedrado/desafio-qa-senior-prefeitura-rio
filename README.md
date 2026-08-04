@@ -81,6 +81,8 @@ O conjunto atual separa dois usos: o quality gate executa `pytest -m "not known_
 ```text
 api/                         API fornecida no desafio
 tests/                       Testes funcionais e de contrato com pytest
+tests/client.py              Client HTTP de dominio usado pelos testes
+tests/data.py                Dados conhecidos e termos de busca centralizados
 performance/catalog-api.k6.js Teste de carga/smoke com k6
 performance/spike.k6.js       Teste manual de pico/stress
 docs/BUGS.md                 Bugs encontrados, impacto e reproducao
@@ -102,14 +104,15 @@ Os testes foram separados por dominio para facilitar manutencao:
 - `test_webhook.py`: contrato do webhook e assinatura HMAC.
 - `test_data_management.py`: isolamento de snapshot e verificacao de ausencia de mutacao compartilhada.
 
-Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
+Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. As chamadas HTTP passam por `tests/client.py`, que centraliza URL base, timeout, paths e headers, deixando os testes focados na intencao do comportamento. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais. O contrato observado esta em `openapi.yaml` e algumas respostas sao validadas contra JSON Schema.
 
 ## Test data management
 
 A API do desafio nao possui endpoints de criacao/remocao de servicos, entao a estrategia implementada evita depender de estado mutavel compartilhado:
 
-- cada teste recebe uma `requests.Session` propria, fechada ao final da fixture;
+- cada teste recebe um `CatalogApiClient` proprio, com sessao HTTP fechada ao final da fixture;
 - `catalog_snapshot` busca um snapshot fresco do catalogo por teste e retorna uma copia independente;
+- `tests/data.py` centraliza IDs, titulos, categorias e termos usados nos cenarios;
 - seletores como `catalog.by_title(...)`, `catalog.by_category(...)` e `catalog.unknown_id()` centralizam dados conhecidos;
 - testes de favoritos e webhook verificam que essas operacoes nao alteram o catalogo base;
 - testes de isolamento garantem que mutacoes locais no snapshot de um teste nao vazam para outro.

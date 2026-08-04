@@ -1,24 +1,23 @@
-import json
-
 import pytest
 
-from tests.helpers import webhook_signature
+from tests.data import (
+    SERVICE_DELETED_EVENT,
+    SERVICE_UPDATED_EVENT,
+    VACCINATION_SERVICE_ID,
+    VACCINATION_SERVICE_TITLE,
+)
+from tests.helpers import build_signed_webhook_request, webhook_signature
 
 
 @pytest.mark.contract
 def test_webhook_accepts_valid_hmac_signature(api, catalog):
-    service = catalog.by_title("Vacinação Gratuita")
-    payload = {"event": "service.updated", "id": service["id"], "active": True}
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    service = catalog.by_title(VACCINATION_SERVICE_TITLE)
+    payload = {"event": SERVICE_UPDATED_EVENT, "id": service["id"], "active": True}
+    body, headers = build_signed_webhook_request(payload)
 
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
+    response = api.webhook(
         data=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Signature-256": webhook_signature(body),
-        },
-        timeout=3,
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -28,16 +27,11 @@ def test_webhook_accepts_valid_hmac_signature(api, catalog):
 @pytest.mark.contract
 def test_webhook_accepts_large_valid_payload(api):
     payload = {"event": "service.bulk_updated", "ids": [f"s{i:03d}" for i in range(1, 201)]}
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    body, headers = build_signed_webhook_request(payload)
 
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
+    response = api.webhook(
         data=body,
-        headers={
-            "Content-Type": "application/json",
-            "X-Signature-256": webhook_signature(body),
-        },
-        timeout=3,
+        headers=headers,
     )
 
     assert response.status_code == 200
@@ -46,24 +40,20 @@ def test_webhook_accepts_large_valid_payload(api):
 
 @pytest.mark.contract
 def test_webhook_replay_with_same_signature_is_currently_accepted(api):
-    payload = {"event": "service.updated", "id": "s002", "nonce": "replay-check"}
-    body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    headers = {
-        "Content-Type": "application/json",
-        "X-Signature-256": webhook_signature(body),
+    payload = {
+        "event": SERVICE_UPDATED_EVENT,
+        "id": VACCINATION_SERVICE_ID,
+        "nonce": "replay-check",
     }
+    body, headers = build_signed_webhook_request(payload)
 
-    first_response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
+    first_response = api.webhook(
         data=body,
         headers=headers,
-        timeout=3,
     )
-    second_response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
+    second_response = api.webhook(
         data=body,
         headers=headers,
-        timeout=3,
     )
 
     assert first_response.status_code == 200
@@ -73,14 +63,12 @@ def test_webhook_replay_with_same_signature_is_currently_accepted(api):
 @pytest.mark.negative
 def test_webhook_rejects_invalid_json(api):
     body = b"{not-json"
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
+    response = api.webhook(
         data=body,
         headers={
             "Content-Type": "application/json",
             "X-Signature-256": webhook_signature(body),
         },
-        timeout=3,
     )
 
     assert response.status_code == 400
@@ -92,10 +80,8 @@ def test_webhook_rejects_invalid_json(api):
 @pytest.mark.known_bug_high
 @pytest.mark.security
 def test_webhook_rejects_missing_signature(api):
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
-        json={"event": "service.deleted", "id": "s002"},
-        timeout=3,
+    response = api.webhook(
+        json={"event": SERVICE_DELETED_EVENT, "id": VACCINATION_SERVICE_ID},
     )
 
     assert response.status_code == 401
@@ -107,11 +93,9 @@ def test_webhook_rejects_missing_signature(api):
 @pytest.mark.known_bug_high
 @pytest.mark.security
 def test_webhook_rejects_invalid_signature(api):
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
-        json={"event": "service.deleted", "id": "s002"},
+    response = api.webhook(
+        json={"event": SERVICE_DELETED_EVENT, "id": VACCINATION_SERVICE_ID},
         headers={"X-Signature-256": "sha256=invalid"},
-        timeout=3,
     )
 
     assert response.status_code == 401
@@ -123,13 +107,13 @@ def test_webhook_rejects_invalid_signature(api):
 @pytest.mark.known_bug_high
 @pytest.mark.security
 def test_webhook_rejects_signature_from_different_payload(api):
-    signed_body = json.dumps({"event": "service.updated", "id": "s002"}).encode("utf-8")
+    signed_body, _headers = build_signed_webhook_request(
+        {"event": SERVICE_UPDATED_EVENT, "id": VACCINATION_SERVICE_ID}
+    )
 
-    response = api.post(
-        f"{api.base_url}/api/v1/webhooks/catalog",
-        json={"event": "service.deleted", "id": "s002"},
+    response = api.webhook(
+        json={"event": SERVICE_DELETED_EVENT, "id": VACCINATION_SERVICE_ID},
         headers={"X-Signature-256": webhook_signature(signed_body)},
-        timeout=3,
     )
 
     assert response.status_code == 401

@@ -5,6 +5,9 @@ from copy import deepcopy
 import pytest
 import requests
 
+from tests.client import CatalogApiClient
+from tests.data import UNKNOWN_SERVICE_ID
+
 DEFAULT_TOKEN = "qa-challenge-token"
 
 
@@ -38,16 +41,14 @@ def auth_headers():
 
 @pytest.fixture
 def api(base_url):
-    session = requests.Session()
-    session.headers.update({"Accept": "application/json"})
-    session.base_url = base_url
-    yield session
-    session.close()
+    client = CatalogApiClient(base_url)
+    yield client
+    client.close()
 
 
 @pytest.fixture
 def catalog_snapshot(api):
-    response = api.get(f"{api.base_url}/api/v1/services?per_page=100", timeout=3)
+    response = api.list_services(per_page=100)
     response.raise_for_status()
     return deepcopy(response.json()["data"])
 
@@ -72,7 +73,7 @@ def catalog(catalog_snapshot):
 
         def unknown_id(self):
             existing_ids = {service["id"] for service in self.services}
-            candidate = "s999"
+            candidate = UNKNOWN_SERVICE_ID
             assert candidate not in existing_ids
             return candidate
 
