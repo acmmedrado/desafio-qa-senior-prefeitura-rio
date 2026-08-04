@@ -16,9 +16,9 @@ Resultado observado:
 http_req_failed: 0.00%
 checks: 100.00%
 dropped_iterations: 0
-http_reqs: ~35 req/s
-p95 global: < 1 ms
-p99 global: < 2 ms
+http_reqs: 35.10 req/s
+p95 global: 601 us
+p99 global: 1.14 ms
 ```
 
 Interpretacao:

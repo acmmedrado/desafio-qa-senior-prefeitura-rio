@@ -166,17 +166,17 @@ Com a API rodando localmente em `http://localhost:8080`:
 | Comando | Resultado esperado | Interpretacao |
 |---|---:|---|
 | `make lint` | passou | Codigo de testes e scripts formatado/validado com `ruff` |
-| `make test` | 38 passed | Quality gate funcional verde |
-| `make release-gate` | 6 failed | Bugs criticos/seguranca bloqueando release |
-| `make test-known-bugs-diagnostic` | 12 failed | Bugs medios/baixos e riscos de UX documentados |
+| `make test` | 45 passed | Quality gate funcional verde |
+| `make release-gate` | 8 failed | Bugs criticos/seguranca bloqueando release |
+| `make test-known-bugs-diagnostic` | 13 failed | Bugs medios/baixos e riscos de UX documentados |
 | `make perf` | passou | Smoke de performance com `0.00%` de falhas HTTP |
 
 Resumo do relatorio consolidado:
 
 ```text
-Quality gate: 38 passed, 0 failed
-Release-blocking known bugs: 6 failed
-Non-blocking known bug diagnostics: 12 failed
+Quality gate: 45 passed, 0 failed
+Release-blocking known bugs: 8 failed
+Non-blocking known bug diagnostics: 13 failed
 Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 ```
 
@@ -192,24 +192,24 @@ Quality Summary
 Geral
 - Automacao do CI: OK
 - Decisao de release: Blocked
-- Quality gate funcional: 38/38 passed
-- Release blockers conhecidos: 6
-- Bugs diagnosticos conhecidos: 12
+- Quality gate funcional: 45/45 passed
+- Release blockers conhecidos: 8
+- Bugs diagnosticos conhecidos: 13
 
 Quality Lenses
-- API contract and schema: 34 tests mapped
-- Negative and edge cases: 21 tests mapped
-- Security and authorization: 4 tests mapped
+- API contract and schema: 40 tests mapped
+- Negative and edge cases: 25 tests mapped
+- Security and authorization: 6 tests mapped
 - Test data management: 4 tests mapped
 - UX and API usability: 6 tests mapped
-- Resilience: 4 tests mapped
+- Resilience: 5 tests mapped
 ```
 
 `reports/pytest-report.html`:
 
 ```text
 Suite funcional sem bugs conhecidos
-Resultado: 38 passed, 18 deselected
+Resultado: 45 passed, 21 deselected
 Interpretacao: o quality gate principal esta verde para os comportamentos aceitos.
 ```
 
@@ -217,20 +217,22 @@ Interpretacao: o quality gate principal esta verde para os comportamentos aceito
 
 ```text
 Bugs bloqueantes de release
-Resultado: 6 failed, 50 deselected
+Resultado: 8 failed, 58 deselected
 Exemplos:
 - recommendations sem token retorna 200 em vez de 401
+- recommendations aceita tokens invalidos em vez de retornar 401
 - servico inexistente retorna 500 em vez de 404
 - variacoes adversariais de id inexistente tambem retornam 500
-- webhook aceita assinatura ausente ou invalida
+- webhook aceita assinatura ausente, invalida ou assinada com segredo incorreto
 ```
 
 `reports/known-bugs-report.html`:
 
 ```text
 Bugs diagnosticos nao bloqueantes
-Resultado: 12 failed, 44 deselected
+Resultado: 13 failed, 53 deselected
 Exemplos:
+- busca sem campo query retorna 200 em vez de 400
 - busca sem resultado retorna results=null em vez de []
 - busca nao normaliza acentos, espacos e termos comuns
 - total_pages usa divisao truncada em vez de arredondar para cima

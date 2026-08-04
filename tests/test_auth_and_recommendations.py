@@ -73,6 +73,25 @@ def test_recommendations_requires_authorization(api):
     assert response.json()["error"] == "missing authorization header"
 
 
+@pytest.mark.negative
+@pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
+def test_recommendations_rejects_invalid_authorization_variants(api):
+    headers_list = [
+        {"Authorization": "Bearer wrong-token"},
+        {"Authorization": "Basic qa-challenge-token"},
+        {"Authorization": "Bearer "},
+    ]
+
+    responses = [
+        api.recommendations(VACCINATION_SERVICE_ID, headers=headers).status_code
+        for headers in headers_list
+    ]
+
+    assert responses == [401, 401, 401]
+
+
 @pytest.mark.contract
 def test_recommendations_returns_same_category_services_when_authorized(api, auth_headers, catalog):
     service = catalog.by_title(VACCINATION_SERVICE_TITLE)

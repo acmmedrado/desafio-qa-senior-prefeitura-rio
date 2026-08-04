@@ -106,6 +106,26 @@ def test_webhook_rejects_invalid_signature(api):
 @pytest.mark.known_bug
 @pytest.mark.known_bug_high
 @pytest.mark.security
+def test_webhook_rejects_signature_created_with_wrong_secret(api):
+    payload = {"event": SERVICE_DELETED_EVENT, "id": VACCINATION_SERVICE_ID}
+    body, _headers = build_signed_webhook_request(payload)
+
+    response = api.webhook(
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Signature-256": webhook_signature(body, secret="wrong-secret"),
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "invalid webhook signature"
+
+
+@pytest.mark.negative
+@pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
 def test_webhook_rejects_signature_from_different_payload(api):
     signed_body, _headers = build_signed_webhook_request(
         {"event": SERVICE_UPDATED_EVENT, "id": VACCINATION_SERVICE_ID}

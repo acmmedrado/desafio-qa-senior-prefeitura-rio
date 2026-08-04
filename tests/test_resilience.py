@@ -11,9 +11,18 @@ def test_health_handles_small_burst_of_concurrent_requests(api):
         return api.health().status_code
 
     with ThreadPoolExecutor(max_workers=10) as executor:
-        statuses = list(executor.map(lambda _: get_health(), range(20)))
+        statuses = list(executor.map(lambda _: get_health(), range(50)))
 
-    assert statuses == [200] * 20
+    assert statuses == [200] * 50
+
+
+@pytest.mark.contract
+def test_health_handles_connection_close_requests(api):
+    statuses = [
+        api.request("GET", "/health", headers={"Connection": "close"}).status_code for _ in range(5)
+    ]
+
+    assert statuses == [200] * 5
 
 
 @pytest.mark.negative

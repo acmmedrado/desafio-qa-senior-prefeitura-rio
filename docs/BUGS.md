@@ -47,6 +47,7 @@ Testes automatizados:
 
 - `tests/test_search.py::test_search_rejects_empty_query`
 - `tests/test_search.py::test_search_rejects_blank_query`
+- `tests/test_search.py::test_search_rejects_missing_query_field`
 
 ## BUG-003 - `total_pages` usa arredondamento para baixo
 
@@ -91,6 +92,7 @@ Testes automatizados:
 
 - `tests/test_webhook.py::test_webhook_rejects_missing_signature`
 - `tests/test_webhook.py::test_webhook_rejects_invalid_signature`
+- `tests/test_webhook.py::test_webhook_rejects_signature_created_with_wrong_secret`
 - `tests/test_webhook.py::test_webhook_rejects_signature_from_different_payload`
 
 ## BUG-005 - Recomendacoes sao acessiveis sem autenticacao
@@ -107,9 +109,12 @@ curl -i http://localhost:8080/api/v1/services/s002/recommendations
 
 Resultado atual: `200 OK`.
 
-Resultado esperado: `401 Unauthorized` sem `Authorization: Bearer qa-challenge-token`.
+Resultado esperado: `401 Unauthorized` sem `Authorization: Bearer qa-challenge-token` ou com token/esquema invalido.
 
-Teste automatizado: `tests/test_auth_and_recommendations.py::test_recommendations_requires_authorization`.
+Testes automatizados:
+
+- `tests/test_auth_and_recommendations.py::test_recommendations_requires_authorization`
+- `tests/test_auth_and_recommendations.py::test_recommendations_rejects_invalid_authorization_variants`
 
 ## BUG-006 - Busca sem resultados retorna `null` em vez de lista vazia
 

@@ -94,6 +94,26 @@ def test_search_rejects_malformed_json(api):
 
 
 @pytest.mark.negative
+def test_search_rejects_non_json_content_type(api):
+    response = api.search_raw(
+        data="saude",
+        headers={"Content-Type": "text/plain"},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "invalid JSON body"
+
+
+@pytest.mark.negative
+@pytest.mark.known_bug
+def test_search_rejects_missing_query_field(api):
+    response = api.search_raw(json={})
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "query is required"
+
+
+@pytest.mark.negative
 @pytest.mark.known_bug
 def test_search_rejects_empty_query(api):
     response = api.search("")

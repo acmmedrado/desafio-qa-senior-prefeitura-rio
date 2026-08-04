@@ -12,14 +12,17 @@ Exemplos de cenarios fora do happy path:
 - servico inexistente;
 - variacoes adversariais de ID inexistente, incluindo entrada SQL-like, unicode parecido, string enorme e whitespace;
 - JSON malformado;
-- query vazia ou em branco;
+- content-type nao JSON;
+- query ausente, vazia ou em branco;
 - paginacao com valores negativos, zero, nao numericos e pagina fora do intervalo;
-- webhook sem assinatura, com assinatura invalida e com assinatura de outro payload;
+- webhook sem assinatura, com assinatura invalida, assinatura gerada com segredo incorreto e assinatura de outro payload;
 - payload grande de webhook;
 - query longa com caracteres Unicode;
 - metodo HTTP nao suportado;
 - busca sem resultado;
 - busca com acento, espacos extras e termos comuns de usuario.
+- consistencia entre listagem e detalhe para todos os servicos;
+- ids, tags e `view_count` consistentes para todo o catalogo observado.
 
 Essa abordagem mostra que a suite nao valida apenas se a API funciona quando tudo esta correto. Ela tambem verifica se a API falha de forma previsivel, segura e facil de consumir.
 
