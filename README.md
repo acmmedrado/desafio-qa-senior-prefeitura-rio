@@ -20,6 +20,16 @@ pip install -r requirements.txt
 pytest
 ```
 
+Tambem ha atalhos via `make`:
+
+```bash
+make install
+make api
+make test
+make test-known-bugs
+make perf
+```
+
 Para rodar apenas o quality gate bloqueante, excluindo bugs ja documentados:
 
 ```bash
@@ -70,6 +80,7 @@ api/                         API fornecida no desafio
 tests/                       Testes funcionais e de contrato com pytest
 performance/catalog-api.k6.js Teste de carga/smoke com k6
 docs/BUGS.md                 Bugs encontrados, impacto e reproducao
+docs/EXECUTION.md            Resultado de uma execucao local real
 .github/workflows/quality.yml CI de qualidade
 ```
 
@@ -84,6 +95,28 @@ Os testes foram separados por dominio para facilitar manutencao:
 - `test_webhook.py`: contrato do webhook e assinatura HMAC.
 
 Usei `pytest` porque e simples, legivel, adequado para testes HTTP e gera artefatos consumiveis pelo CI. Usei `k6` para performance porque permite thresholds declarativos e cenarios de carga reproduziveis sem acoplar a suite funcional a metricas temporais.
+
+## Matriz de cobertura
+
+| Endpoint | Happy path | Erros e bordas | Auth/seguranca | Contrato | Performance |
+|---|---:|---:|---:|---:|---:|
+| `GET /health` | Sim | N/A | N/A | Sim | Sim |
+| `GET /api/v1/services` | Sim | Sim | N/A | Sim | Sim |
+| `GET /api/v1/services/:id` | Sim | Sim | N/A | Sim | Sim |
+| `POST /api/v1/services/search` | Sim | Sim | N/A | Sim | Sim |
+| `GET /api/v1/services/:id/recommendations` | Sim | Sim | Sim | Sim | Sim |
+| `POST /api/v1/services/:id/favorite` | Sim | Sim | Sim | Sim | Nao |
+| `POST /api/v1/webhooks/catalog` | Sim | Sim | Sim | Sim | Sim |
+
+## Resultados observados
+
+Uma execucao local real esta registrada em `docs/EXECUTION.md`.
+
+Resumo:
+
+- `pytest -m "not known_bug"`: 13 testes passaram.
+- `pytest -m known_bug`: 7 testes falharam, todos associados aos bugs documentados.
+- `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
 
 ## Performance
 
