@@ -176,6 +176,60 @@ Non-blocking known bug diagnostics: 12 failed
 Performance smoke: 0.00% HTTP failures, dropped_iterations=0
 ```
 
+## Exemplos de relatorios gerados
+
+Os exemplos abaixo foram gerados rodando `make reports` localmente com a API em `http://localhost:8080`. Eles foram resumidos em texto para registrar a evidencia sem expor usuario da maquina, caminhos locais ou stack traces completos.
+
+`reports/quality-summary.md`:
+
+```text
+Quality Summary
+
+Execution Gates
+- Quality gate: 38 tests, 38 passed, 0 failures
+- Release-blocking known bugs: 5 tests, 5 failures
+- Non-blocking known bug diagnostics: 12 tests, 12 failures
+
+Quality Lenses
+- API contract and schema: 34 tests mapped
+- Negative and edge cases: 20 tests mapped
+- Security and authorization: 4 tests mapped
+- Test data management: 4 tests mapped
+- UX and API usability: 6 tests mapped
+- Resilience: 4 tests mapped
+```
+
+`reports/pytest-report.html`:
+
+```text
+Suite funcional sem bugs conhecidos
+Resultado: 38 passed, 17 deselected
+Interpretacao: o quality gate principal esta verde para os comportamentos aceitos.
+```
+
+`reports/release-gate-report.html`:
+
+```text
+Bugs bloqueantes de release
+Resultado: 5 failed, 50 deselected
+Exemplos:
+- recommendations sem token retorna 200 em vez de 401
+- servico inexistente retorna 500 em vez de 404
+- webhook aceita assinatura ausente ou invalida
+```
+
+`reports/known-bugs-report.html`:
+
+```text
+Bugs diagnosticos nao bloqueantes
+Resultado: 12 failed, 43 deselected
+Exemplos:
+- busca sem resultado retorna results=null em vez de []
+- busca nao normaliza acentos, espacos e termos comuns
+- total_pages usa divisao truncada em vez de arredondar para cima
+- busca por linguagem de necessidade nao encontra alguns servicos esperados
+```
+
 ## Performance
 
 Os thresholds atuais foram definidos como uma primeira barra de producao para um catalogo municipal de alta consulta e baixa complexidade computacional:
