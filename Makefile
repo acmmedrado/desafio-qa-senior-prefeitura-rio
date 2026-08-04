@@ -1,4 +1,4 @@
-.PHONY: help install api lint test test-known-bugs test-all perf perf-spike reports summary clean
+.PHONY: help install api lint test release-gate test-known-bugs test-known-bugs-diagnostic test-all perf perf-spike reports summary clean
 
 PYTHON ?= python3
 VENV := .venv
@@ -11,7 +11,9 @@ help:
 	@echo "  make api              Sobe a API localmente com go run"
 	@echo "  make lint             Roda ruff nos testes e scripts"
 	@echo "  make test             Roda o quality gate sem bugs conhecidos"
+	@echo "  make release-gate     Roda bugs criticos conhecidos como gate bloqueante"
 	@echo "  make test-known-bugs  Roda testes que documentam bugs conhecidos"
+	@echo "  make test-known-bugs-diagnostic  Roda bugs nao criticos como diagnostico"
 	@echo "  make test-all         Roda a suite completa"
 	@echo "  make reports          Gera relatorios HTML/JUnit"
 	@echo "  make perf             Roda teste de performance com k6"
@@ -34,8 +36,14 @@ lint:
 test:
 	BASE_URL=$(BASE_URL) $(PYTEST) -m "not known_bug"
 
+release-gate:
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug_high or security"
+
 test-known-bugs:
 	BASE_URL=$(BASE_URL) $(PYTEST) -m known_bug
+
+test-known-bugs-diagnostic:
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug and not (known_bug_high or security)"
 
 test-all:
 	BASE_URL=$(BASE_URL) $(PYTEST)
@@ -46,7 +54,11 @@ reports:
 		--junitxml=reports/pytest-junit.xml \
 		--html=reports/pytest-report.html \
 		--self-contained-html
-	BASE_URL=$(BASE_URL) $(PYTEST) -m known_bug \
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug_high or security" \
+		--junitxml=reports/release-gate-junit.xml \
+		--html=reports/release-gate-report.html \
+		--self-contained-html || true
+	BASE_URL=$(BASE_URL) $(PYTEST) -m "known_bug and not (known_bug_high or security)" \
 		--junitxml=reports/known-bugs-junit.xml \
 		--html=reports/known-bugs-report.html \
 		--self-contained-html || true

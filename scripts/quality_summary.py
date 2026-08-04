@@ -34,11 +34,13 @@ def line(label: str, totals: dict[str, int]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--functional", default="reports/pytest-junit.xml")
+    parser.add_argument("--release-gate", default="reports/release-gate-junit.xml")
     parser.add_argument("--known-bugs", default="reports/known-bugs-junit.xml")
     parser.add_argument("--output", default="reports/quality-summary.md")
     args = parser.parse_args()
 
     functional = parse_junit(Path(args.functional))
+    release_gate = parse_junit(Path(args.release_gate))
     known_bugs = parse_junit(Path(args.known_bugs))
 
     content = "\n".join(
@@ -48,9 +50,10 @@ def main() -> int:
             "| Suite | Tests | Passed | Failures | Errors | Skipped |",
             "|---|---:|---:|---:|---:|---:|",
             line("Quality gate", functional),
-            line("Known bugs", known_bugs),
+            line("Release-blocking known bugs", release_gate),
+            line("Non-blocking known bug diagnostics", known_bugs),
             "",
-            "Known bug failures are expected while the defects documented in `docs/BUGS.md` remain open.",
+            "Release-blocking known bugs represent high-severity/security defects and should keep the release gate red until fixed or formally waived.",
             "",
         ]
     )

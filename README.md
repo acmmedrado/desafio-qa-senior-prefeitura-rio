@@ -1,5 +1,7 @@
 # Desafio QA Senior - Automacao
 
+[![quality](https://github.com/acmmedrado/desafio-qa-senior-prefeitura-rio/actions/workflows/quality.yml/badge.svg)](https://github.com/acmmedrado/desafio-qa-senior-prefeitura-rio/actions/workflows/quality.yml)
+
 Esta entrega monta uma camada de qualidade para o Catalogo de Servicos Publicos. O foco foi validar comportamento de API, seguranca basica, erros, bordas, performance e capacidade de execucao automatica em CI.
 
 ## Como executar
@@ -26,6 +28,7 @@ Tambem ha atalhos via `make`:
 make install
 make api
 make test
+make release-gate
 make test-known-bugs
 make perf
 ```
@@ -79,8 +82,11 @@ O conjunto atual separa dois usos: o quality gate executa `pytest -m "not known_
 api/                         API fornecida no desafio
 tests/                       Testes funcionais e de contrato com pytest
 performance/catalog-api.k6.js Teste de carga/smoke com k6
+performance/spike.k6.js       Teste manual de pico/stress
 docs/BUGS.md                 Bugs encontrados, impacto e reproducao
 docs/EXECUTION.md            Resultado de uma execucao local real
+docs/RISK_TRACEABILITY.md     Risco, requisito, teste e evidencia
+docs/RELEASE_WAIVERS.md       Politica de waiver para bugs bloqueantes
 docs/UX_QUALITY.md           Avaliacao da API pela lente de usabilidade
 .github/workflows/quality.yml CI de qualidade
 ```
@@ -122,14 +128,24 @@ Foram adicionados testes para:
 - ordenacao por relevancia;
 - normalizacao de termos comuns digitados por usuarios.
 
+## Politica de release gate
+
+Os bugs conhecidos sao separados por risco:
+
+- `known_bug_high` e `security`: bloqueiam release e rodam em `make release-gate`.
+- demais `known_bug`: rodam como diagnostico em `make test-known-bugs-diagnostic`.
+
+Isso significa que o CI pode ficar vermelho enquanto existirem bugs criticos sem waiver. A politica e os waivers estao documentados em `docs/RISK_TRACEABILITY.md` e `docs/RELEASE_WAIVERS.md`.
+
 ## Resultados observados
 
 Uma execucao local real esta registrada em `docs/EXECUTION.md`.
 
 Resumo:
 
-- `pytest -m "not known_bug"`: 30 testes passaram.
-- `pytest -m known_bug`: 17 testes falharam, todos associados aos bugs documentados.
+- `pytest -m "not known_bug"`: 34 testes passaram.
+- `pytest -m "known_bug_high or security"`: 5 testes falharam e bloqueiam release.
+- `pytest -m "known_bug and not (known_bug_high or security)"`: 12 testes falharam como diagnostico.
 - `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
 
 ## Performance
@@ -142,6 +158,8 @@ Os thresholds atuais foram definidos como uma primeira barra de producao para um
 - `checks > 99%`
 
 O cenario de CI sobe ate 50 usuarios virtuais por ser um smoke test. Uma forma de justificar esse numero: se o catalogo tiver 20 mil acessos/dia e 20% deles ocorrerem em uma janela de pico de 2 horas, isso representa cerca de 33 requisicoes/minuto. Com usuarios navegando por alguns segundos entre busca, detalhe e recomendacao, 50 VUs e uma carga conservadora para detectar regressao sem deixar o CI lento.
+
+Os tempos observados localmente em microssegundos refletem uma API Go em memoria, sem banco, rede real, cache externo, observabilidade ou infraestrutura de producao. Por isso, os testes de performance aqui servem como smoke/regressao e nao como prova de capacidade final de producao.
 
 Tambem existe um cenario manual de spike/stress:
 
@@ -157,13 +175,14 @@ O workflow `.github/workflows/quality.yml`:
 
 1. Sobe a API com Docker Compose.
 2. Instala dependencias Python.
-3. Executa o quality gate funcional, excluindo bugs conhecidos.
-4. Executa lint/format dos testes com `ruff`.
-5. Executa os testes de bugs conhecidos como diagnostico nao bloqueante.
-6. Gera um resumo consolidado no GitHub Step Summary.
-7. Publica os relatorios como artefato.
-8. Executa o smoke de performance com k6.
-9. Derruba a API ao final.
+3. Executa lint/format dos testes com `ruff`.
+4. Executa o quality gate funcional, excluindo bugs conhecidos.
+5. Executa o release gate bloqueante para bugs criticos/seguranca.
+6. Executa os testes de bugs conhecidos nao criticos como diagnostico.
+7. Gera um resumo consolidado no GitHub Step Summary.
+8. Publica os relatorios como artefato.
+9. Executa o smoke de performance com k6.
+10. Derruba a API ao final.
 
 Como a API atual tem defeitos de severidade media a critica, a suite completa deve falhar ate que eles sejam corrigidos. O gate principal, porem, fica verde para os comportamentos que ja estao corretos.
 

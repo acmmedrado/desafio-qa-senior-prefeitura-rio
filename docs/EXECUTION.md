@@ -19,22 +19,34 @@ pytest -m "not known_bug"
 Resultado observado:
 
 ```text
-30 passed, 17 deselected
+34 passed, 17 deselected
 ```
 
-Suite de bugs conhecidos:
+Release gate bloqueante:
 
 ```bash
-pytest -m known_bug
+pytest -m "known_bug_high or security"
 ```
 
 Resultado observado:
 
 ```text
-17 failed, 28 deselected
+5 failed, 46 deselected
 ```
 
-As falhas sao esperadas enquanto os bugs descritos em `docs/BUGS.md` nao forem corrigidos.
+Suite diagnostica de bugs conhecidos:
+
+```bash
+pytest -m "known_bug and not (known_bug_high or security)"
+```
+
+Resultado observado:
+
+```text
+12 failed, 39 deselected
+```
+
+As 5 falhas do release gate devem bloquear release enquanto nao forem corrigidas ou formalmente justificadas em `docs/RELEASE_WAIVERS.md`. As 12 falhas diagnosticas representam bugs medios/baixos e riscos de usabilidade documentados em `docs/BUGS.md`.
 
 ## Performance
 
@@ -48,8 +60,10 @@ Resultado observado:
 
 ```text
 http_req_failed: 0.00%
-http_req_duration p(95): 664.39us
-http_req_duration p(99): 938.95us
+http_reqs: 35.13/s
+dropped_iterations: 0
+http_req_duration p(95): 710us
+http_req_duration p(99): 1.41ms
 checks: 100.00%
 ```
 

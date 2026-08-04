@@ -108,6 +108,7 @@ def test_get_existing_service_by_id(api):
 
 @pytest.mark.negative
 @pytest.mark.known_bug
+@pytest.mark.known_bug_high
 def test_get_unknown_service_returns_404_instead_of_server_error(api):
     response = api.get(f"{api.base_url}/api/v1/services/s999", timeout=3)
 

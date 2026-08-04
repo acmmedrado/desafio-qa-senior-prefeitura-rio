@@ -62,6 +62,8 @@ def test_favorite_unknown_service_returns_404(api, auth_headers):
 
 @pytest.mark.negative
 @pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
 def test_recommendations_requires_authorization(api):
     response = api.get(f"{api.base_url}/api/v1/services/s002/recommendations", timeout=3)
 

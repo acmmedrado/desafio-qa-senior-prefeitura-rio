@@ -71,12 +71,13 @@ def test_webhook_replay_with_same_signature_is_currently_accepted(api):
 
 @pytest.mark.negative
 def test_webhook_rejects_invalid_json(api):
+    body = b"{not-json"
     response = api.post(
         f"{api.base_url}/api/v1/webhooks/catalog",
-        data="{not-json",
+        data=body,
         headers={
             "Content-Type": "application/json",
-            "X-Signature-256": "sha256=invalid",
+            "X-Signature-256": webhook_signature(body),
         },
         timeout=3,
     )
@@ -87,6 +88,8 @@ def test_webhook_rejects_invalid_json(api):
 
 @pytest.mark.negative
 @pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
 def test_webhook_rejects_missing_signature(api):
     response = api.post(
         f"{api.base_url}/api/v1/webhooks/catalog",
@@ -100,6 +103,8 @@ def test_webhook_rejects_missing_signature(api):
 
 @pytest.mark.negative
 @pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
 def test_webhook_rejects_invalid_signature(api):
     response = api.post(
         f"{api.base_url}/api/v1/webhooks/catalog",
@@ -114,6 +119,8 @@ def test_webhook_rejects_invalid_signature(api):
 
 @pytest.mark.negative
 @pytest.mark.known_bug
+@pytest.mark.known_bug_high
+@pytest.mark.security
 def test_webhook_rejects_signature_from_different_payload(api):
     signed_body = json.dumps({"event": "service.updated", "id": "s002"}).encode("utf-8")
 

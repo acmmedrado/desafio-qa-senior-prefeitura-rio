@@ -31,7 +31,8 @@ def wait_for_api(base_url):
 
 @pytest.fixture
 def auth_headers():
-    return {"Authorization": f"Bearer {DEFAULT_TOKEN}"}
+    token = os.getenv("AUTH_TOKEN", DEFAULT_TOKEN)
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture
