@@ -207,7 +207,7 @@ O workflow `.github/workflows/quality.yml`:
 4. Executa o quality gate funcional, excluindo bugs conhecidos.
 5. Executa o release gate bloqueante para bugs criticos/seguranca.
 6. Executa os testes de bugs conhecidos nao criticos como diagnostico.
-7. Gera um resumo consolidado no GitHub Step Summary.
+7. Gera um resumo consolidado no GitHub Step Summary, incluindo gates, lentes de qualidade, arquitetura de testes e bugs conhecidos em aberto.
 8. Publica os relatorios como artefato.
 9. Executa o smoke de performance com k6.
 10. Derruba a API ao final.
