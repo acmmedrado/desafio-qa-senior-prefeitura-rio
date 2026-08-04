@@ -137,16 +137,28 @@ Os bugs conhecidos sao separados por risco:
 
 Isso significa que o CI pode ficar vermelho enquanto existirem bugs criticos sem waiver. A politica e os waivers estao documentados em `docs/RISK_TRACEABILITY.md` e `docs/RELEASE_WAIVERS.md`.
 
-## Resultados observados
+## Resultados locais
 
-Uma execucao local real esta registrada em `docs/EXECUTION.md`.
+Uma execucao local real esta registrada em `docs/EXECUTION.md`. Os resultados abaixo foram resumidos em texto para evitar screenshots com usuario, nome da maquina, caminhos locais ou stack traces extensos.
 
-Resumo:
+Com a API rodando localmente em `http://localhost:8080`:
 
-- `pytest -m "not known_bug"`: 34 testes passaram.
-- `pytest -m "known_bug_high or security"`: 5 testes falharam e bloqueiam release.
-- `pytest -m "known_bug and not (known_bug_high or security)"`: 12 testes falharam como diagnostico.
-- `k6 run performance/catalog-api.k6.js`: thresholds de performance passaram com `0.00%` de falhas HTTP.
+| Comando | Resultado esperado | Interpretacao |
+|---|---:|---|
+| `make lint` | passou | Codigo de testes e scripts formatado/validado com `ruff` |
+| `make test` | 34 passed | Quality gate funcional verde |
+| `make release-gate` | 5 failed | Bugs criticos/seguranca bloqueando release |
+| `make test-known-bugs-diagnostic` | 12 failed | Bugs medios/baixos e riscos de UX documentados |
+| `make perf` | passou | Smoke de performance com `0.00%` de falhas HTTP |
+
+Resumo do relatorio consolidado:
+
+```text
+Quality gate: 34 passed, 0 failed
+Release-blocking known bugs: 5 failed
+Non-blocking known bug diagnostics: 12 failed
+Performance smoke: 0.00% HTTP failures, dropped_iterations=0
+```
 
 ## Performance
 
@@ -188,8 +200,8 @@ Como a API atual tem defeitos de severidade media a critica, a suite completa de
 
 ## O que faria com mais tempo
 
-- Criaria um OpenAPI inicial a partir do comportamento esperado e adicionaria contract testing formal.
-- Separaria testes bloqueantes de release e testes exploratorios/diagnosticos com marcadores de severidade.
-- Adicionaria testes de resiliencia para timeouts, reinicio da API e payloads grandes.
-- Integraria relatorio consolidado de qualidade no CI com sumario de bugs conhecidos.
+- Expandiria contract testing com Schemathesis gerando casos automaticamente a partir do `openapi.yaml`.
+- Adicionaria property-based testing com Hypothesis para busca, paginacao e payloads.
+- Criaria cenarios de resiliencia com falhas de rede/controladas por proxy, como timeout e conexao recusada.
+- Separaria uma suite de endurance para execucao agendada mais longa fora do CI de pull request.
 - Evoluiria test data management para uma API com estado persistente, evitando dependencia de dados globais fixos.
