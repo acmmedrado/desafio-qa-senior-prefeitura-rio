@@ -89,6 +89,10 @@ def line(label: str, totals: dict[str, int]) -> str:
     )
 
 
+def passed_count(totals: dict[str, int]) -> int:
+    return totals["tests"] - totals["failures"] - totals["errors"] - totals["skipped"]
+
+
 def coverage_line(label: str, cases: list[TestCase], selector) -> str:
     selected = [case for case in cases if selector(case)]
     blocking = [
@@ -98,6 +102,38 @@ def coverage_line(label: str, cases: list[TestCase], selector) -> str:
         case for case in selected if "known_bug" in case.markers and case not in blocking
     ]
     return f"| {label} | {len(selected)} | {len(blocking)} | {len(diagnostics)} |"
+
+
+def coverage_counts(cases: list[TestCase]) -> list[tuple[str, int, int, int]]:
+    lenses = [
+        ("API contract and schema", lambda case: "contract" in case.markers),
+        ("Negative and edge cases", lambda case: "negative" in case.markers),
+        ("Security and authorization", lambda case: "security" in case.markers),
+        ("Test data management", lambda case: "data_management" in case.markers),
+        ("UX and API usability", lambda case: "test_ux_quality.py" in case.path),
+        ("Resilience", lambda case: "test_resilience.py" in case.path),
+    ]
+    rows = []
+    for label, selector in lenses:
+        selected = [case for case in cases if selector(case)]
+        blocking = [
+            case
+            for case in selected
+            if "known_bug_high" in case.markers or "security" in case.markers
+        ]
+        diagnostics = [
+            case for case in selected if "known_bug" in case.markers and case not in blocking
+        ]
+        rows.append((label, len(selected), len(blocking), len(diagnostics)))
+    return rows
+
+
+def coverage_line_from_counts(label: str, total: int, blocking: int, diagnostics: int) -> str:
+    return f"| {label} | {total} | {blocking} | {diagnostics} |"
+
+
+def simple_status(ok: bool) -> str:
+    return "OK" if ok else "Attention"
 
 
 def architecture_status(root: Path) -> list[str]:
@@ -145,9 +181,35 @@ def main() -> int:
     release_failures = parse_junit_failures(Path(args.release_gate))
     diagnostic_failures = parse_junit_failures(Path(args.known_bugs))
     test_cases = collect_tests(Path(args.test_dir))
+    coverage = coverage_counts(test_cases)
+    functional_ok = functional["failures"] == 0 and functional["errors"] == 0
+    release_blocked = release_gate["failures"] > 0 or release_gate["errors"] > 0
+    total_executed = functional["tests"] + release_gate["tests"] + known_bugs["tests"]
+    total_failures = functional["failures"] + release_gate["failures"] + known_bugs["failures"]
+    total_errors = functional["errors"] + release_gate["errors"] + known_bugs["errors"]
 
     content_lines = [
         "# Quality Summary",
+        "",
+        "## Geral",
+        "",
+        "| Item | Status | Leitura rapida |",
+        "|---|---|---|",
+        f"| Automacao do CI | {simple_status(functional_ok)} | Quality gate funcional executou com {passed_count(functional)} de {functional['tests']} testes passando. |",
+        f"| Decisao de release | {'Blocked' if release_blocked else 'OK'} | {release_gate['failures']} bug(s) critico(s)/seguranca ainda exigem correcao ou waiver formal. |",
+        f"| Diagnostico conhecido | {'Tracked' if known_bugs['tests'] else 'None'} | {known_bugs['failures']} bug(s) medio/baixo ou risco(s) de UX seguem documentados. |",
+        f"| Total executado | {'Reviewed'} | {total_executed} testes nos relatorios, com {total_failures} falha(s) esperadas e {total_errors} erro(s). |",
+        "",
+        "> CI verde significa que a automacao rodou corretamente. Nao significa liberacao automatica: release segue bloqueado enquanto houver bugs criticos listados abaixo.",
+        "",
+        "## Numeros-chave",
+        "",
+        "| Indicador | Valor |",
+        "|---|---:|",
+        f"| Quality gate funcional | {passed_count(functional)}/{functional['tests']} passed |",
+        f"| Release blockers conhecidos | {release_gate['failures']} |",
+        f"| Bugs diagnosticos conhecidos | {known_bugs['failures']} |",
+        f"| Lentes de qualidade mapeadas | {len(coverage)} |",
         "",
         "## Execution Gates",
         "",
@@ -163,22 +225,7 @@ def main() -> int:
         "",
         "| Lens | Tests mapped | Blocking known bugs | Diagnostic known bugs |",
         "|---|---:|---:|---:|",
-        coverage_line(
-            "API contract and schema", test_cases, lambda case: "contract" in case.markers
-        ),
-        coverage_line(
-            "Negative and edge cases", test_cases, lambda case: "negative" in case.markers
-        ),
-        coverage_line(
-            "Security and authorization", test_cases, lambda case: "security" in case.markers
-        ),
-        coverage_line(
-            "Test data management", test_cases, lambda case: "data_management" in case.markers
-        ),
-        coverage_line(
-            "UX and API usability", test_cases, lambda case: "test_ux_quality.py" in case.path
-        ),
-        coverage_line("Resilience", test_cases, lambda case: "test_resilience.py" in case.path),
+        *[coverage_line_from_counts(*row) for row in coverage],
         "",
         "## Test Architecture",
         "",

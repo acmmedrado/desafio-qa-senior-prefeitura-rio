@@ -189,10 +189,12 @@ Os exemplos abaixo foram gerados rodando `make reports` localmente com a API em 
 ```text
 Quality Summary
 
-Execution Gates
-- Quality gate: 38 tests, 38 passed, 0 failures
-- Release-blocking known bugs: 6 tests, 6 failures
-- Non-blocking known bug diagnostics: 12 tests, 12 failures
+Geral
+- Automacao do CI: OK
+- Decisao de release: Blocked
+- Quality gate funcional: 38/38 passed
+- Release blockers conhecidos: 6
+- Bugs diagnosticos conhecidos: 12
 
 Quality Lenses
 - API contract and schema: 34 tests mapped
